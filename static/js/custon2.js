@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function() {
 
     /** =========================
-     * Input Spinner via delegação
+     * Input spinners (aumentar/diminuir)
      * ========================= */
     function initInputSpinnersDelegation() {
         const modal = document.getElementById("modalProduto");
@@ -24,12 +24,10 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
-
-    // Inicializa a delegação uma vez
     initInputSpinnersDelegation();
 
     /** =========================
-     * Modal e seleção de produto
+     * Abrir modal ao clicar no produto
      * ========================= */
     const items = document.querySelectorAll(".team-item");
 
@@ -40,26 +38,20 @@ document.addEventListener("DOMContentLoaded", function() {
             const valor = parseFloat(this.dataset.valor);
             const imagem = this.dataset.imagem;
 
-            // Extras e Metades
+            // Metades
             const outrasMetades = this.dataset.batatas
                 ? this.dataset.batatas.split("||").filter(x => x.trim() !== "")
                 : [];
-            const extrasRaw = this.dataset.extras
-                ? this.dataset.extras.split("||").filter(x => x.trim() !== "")
-                : [];
 
-            // Preenche dados do modal
+            // Preenche modal
             document.getElementById("modalTitulo").textContent = nome;
             document.getElementById("modalDescricao").textContent = descricao;
             document.getElementById("modalValor").textContent = valor.toFixed(2);
             document.getElementById("modalImagem").src = imagem;
 
-            /** =========================
-             * Metades (opcional)
-             * ========================= */
+            /** Metades */
             const metadeContainer = document.getElementById("modalMetade");
             metadeContainer.innerHTML = "";
-
             outrasMetades.forEach((item, i) => {
                 const parts = item.trim().split("|");
                 const pizzaNome = parts[0] || "";
@@ -77,10 +69,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         <img src="${pizzaImg}" alt="${pizzaNome}" style="width:70px; height:70px; object-fit:cover; margin-left:10px; border-radius:6px;">
                     </label>
                 `;
-
                 const radio = div.querySelector("input");
                 const label = div.querySelector("label");
-
                 label.addEventListener("click", function(e) {
                     if (radio.checked) {
                         radio.checked = false;
@@ -92,43 +82,10 @@ document.addEventListener("DOMContentLoaded", function() {
                         label.classList.add("selected");
                     }
                 });
-
                 metadeContainer.appendChild(div);
             });
 
-            /** =========================
-             * Extras
-             * ========================= */
-            const extrasContainer = document.getElementById("modalExtras");
-            extrasContainer.innerHTML = "";
-
-            extrasRaw.forEach((extraStr, i) => {
-                const id = `extra-${i}`;
-                const partes = extraStr.trim().split(" ");
-                const valorExtra = partes.pop(); // último elemento é o valor
-                const nomeExtra = partes.join(" "); // resto é o nome
-
-                const div = document.createElement("div");
-                div.classList.add("extra-item");
-
-                div.innerHTML = `
-                    <div class="extra-nome-valor">
-                        <span>${nomeExtra}</span>
-                        <small>R$ ${valorExtra}</small>
-                    </div>
-                    <div class="extra-controls">
-                        <button type="button" class="btn btn-decrease" data-id="${id}">-</button>
-                        <input type="text" class="extra-quantity" value="0" readonly data-id="${id}">
-                        <button type="button" class="btn btn-increase" data-id="${id}">+</button>
-                    </div>
-                `;
-
-                extrasContainer.appendChild(div);
-            });
-
-            /** =========================
-             * Observação
-             * ========================= */
+            /** Observação */
             const textarea = document.getElementById('pedidoObservacao');
             const contador = document.getElementById('pedidoObservacaoContador');
             if(textarea && contador){
@@ -139,9 +96,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
             }
 
-            /** =========================
-             * Abre modal
-             * ========================= */
+            /** Abre modal */
             const modalEl = document.getElementById("modalProduto");
             if(modalEl){
                 const modal = new bootstrap.Modal(modalEl);
@@ -161,10 +116,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
             let nome = document.getElementById("modalTitulo").textContent;
             const valorOriginal = parseFloat(document.getElementById("modalValor").textContent);
-
             let valorFinal = valorOriginal;
 
-            // Checa se selecionou outra metade
+            // Metade selecionada
             const metadeSelecionada = document.querySelector("input[name='metade']:checked");
             if(metadeSelecionada){
                 const nomeMetade = metadeSelecionada.value;
@@ -173,17 +127,50 @@ document.addEventListener("DOMContentLoaded", function() {
                 nome = `Meia ${nome} / Meia ${nomeMetade}`;
             }
 
-            // Extras
-            const extrasSelecionados = [];
-            document.querySelectorAll("#modalExtras .extra-item, #modalBebidas .extra-item, #modalCerveja .extra-item, #modalSobremesa .extra-item").forEach(div => {
-                const quantidade = parseInt(div.querySelector(".extra-quantity").value) || 0;
-                if(quantidade > 0){
-                    const nomeExtra = div.querySelector(".extra-nome-valor span").textContent;
-                    const valorExtra = parseFloat(div.querySelector(".extra-nome-valor small").textContent.replace("R$","").trim());
-                    for(let i=0;i<quantidade;i++){
-                        extrasSelecionados.push(`${nomeExtra} ${valorExtra.toFixed(2)}`);
-                        valorFinal += valorExtra;
-                    }
+            // Categorias
+            const categorias = {
+                borda: [],
+                refrigerante: [],
+                sobremesa: [],
+                extras: []
+            };
+
+            // Borda Recheada (radio)
+            const bordaSelecionada = document.querySelector("input[name='borda']:checked");
+            if(bordaSelecionada){
+                const label = document.querySelector(`label[for="${bordaSelecionada.id}"]`);
+                let valorBorda = 0;
+                if(label){
+                    const valorText = label.textContent.split("- R$")[1];
+                    valorBorda = parseFloat(valorText.trim());
+                }
+                categorias.borda.push(`${bordaSelecionada.value} ${valorBorda.toFixed(2)}`);
+                valorFinal += valorBorda;
+            }
+
+            // Outras categorias (quantidade)
+            const categoriasMap = {
+                "modalBebidas": "refrigerante",
+                "modalCerveja": "refrigerante",
+                "modalSobremesa": "sobremesa",
+                "modalExtras": "extras"
+            };
+
+            Object.keys(categoriasMap).forEach(id => {
+                const cat = categoriasMap[id];
+                const container = document.getElementById(id);
+                if(container){
+                    container.querySelectorAll(".extra-item").forEach(div => {
+                        const quantidade = parseInt(div.querySelector(".extra-quantity").value) || 0;
+                        if(quantidade > 0){
+                            const nomeItem = div.querySelector(".extra-nome-valor span").textContent;
+                            const valorItem = parseFloat(div.querySelector(".extra-nome-valor small").textContent.replace("R$","").trim());
+                            for(let i=0;i<quantidade;i++){
+                                categorias[cat].push(`${nomeItem} ${valorItem.toFixed(2)}`);
+                                valorFinal += valorItem;
+                            }
+                        }
+                    });
                 }
             });
 
@@ -193,7 +180,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const itemPedido = {
                 nome,
                 valor: valorFinal,
-                extras: extrasSelecionados,
+                categorias,
                 observacao,
                 quantidade: 1
             };
@@ -202,10 +189,14 @@ document.addEventListener("DOMContentLoaded", function() {
             sacola.push(itemPedido);
             localStorage.setItem("sacola", JSON.stringify(sacola));
 
+            // Atualiza contador da sacola
             const contador = document.getElementById("contadorSacola");
             if(contador) contador.textContent = sacola.length;
 
             if(modalInstance) modalInstance.hide();
+
+            // Atualiza checkout
+            atualizarLista();
         }
     });
 
@@ -232,16 +223,23 @@ document.addEventListener("DOMContentLoaded", function() {
             const totalItem = item.valor;
             totalSacola += totalItem;
 
-            const extrasHTML = item.extras.length > 0 ? item.extras.join(", ") : "Nenhum";
+            let detalhes = "";
+            for(const cat in item.categorias){
+                if(item.categorias[cat].length > 0){
+                    const nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
+                    detalhes += `<strong>${nomeCat}:</strong> ${item.categorias[cat].join(", ")}<br>`;
+                }
+            }
 
             const div = document.createElement("div");
             div.className = "p-2 border mb-2 rounded";
             div.innerHTML = `
                 <strong>${item.nome}</strong> - R$ ${totalItem.toFixed(2)}<br>
-                <span><strong>Extras:</strong> ${extrasHTML}</span><br>
+                ${detalhes || "Extras: Nenhum"}<br>
                 <span><strong>Observação:</strong> ${item.observacao || "-"}</span><br>
                 <button class="btn btn-sm btn-danger mt-2 btn-excluir-item" data-index="${i}">Excluir Item</button>
             `;
+
             listaPedidos.appendChild(div);
         });
 
@@ -250,6 +248,7 @@ document.addEventListener("DOMContentLoaded", function() {
         divTotal.innerHTML = `<strong>Total da sacola: R$ ${totalSacola.toFixed(2)}</strong>`;
         listaPedidos.appendChild(divTotal);
 
+        // Botão excluir item
         document.querySelectorAll(".btn-excluir-item").forEach(btn => {
             btn.addEventListener("click", function() {
                 const index = parseInt(this.dataset.index);
@@ -296,7 +295,12 @@ document.addEventListener("DOMContentLoaded", function() {
             let mensagem = `Olá! Gostaria de fazer o pedido:\n\n`;
             sacola.forEach((item, i) => {
                 mensagem += `${i+1}. ${item.nome} - R$ ${item.valor.toFixed(2)}\n`;
-                mensagem += `   Extras: ${item.extras.length > 0 ? item.extras.join(", ") : 'Nenhum'}\n`;
+                for(const cat in item.categorias){
+                    if(item.categorias[cat].length > 0){
+                        const nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
+                        mensagem += `   ${nomeCat}: ${item.categorias[cat].join(", ")}\n`;
+                    }
+                }
                 mensagem += `   Observação: ${item.observacao || "-"}\n\n`;
             });
             mensagem += `Nome: ${nome}\nTelefone: ${telefone}\nPagamento: ${pagamento}\nEndereço: ${endereco}\nObservação: ${observacao}`;
