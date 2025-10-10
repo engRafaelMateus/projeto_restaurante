@@ -282,38 +282,44 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     if(btnEnviar){
-        btnEnviar.addEventListener("click", function(){
-            const nome = document.getElementById("clienteNome").value;
-            const telefone = document.getElementById("clienteTelefone").value;
-            const endereco = document.getElementById("clienteEndereco").value;
-            const pagamento = document.getElementById("clientePagamento").value;
-            const observacao = textareaCheckout.value;
-            const sacola = JSON.parse(localStorage.getItem("sacola")) || [];
+    btnEnviar.addEventListener("click", function(){
+        const nome = document.getElementById("clienteNome").value;
+        const telefone = document.getElementById("clienteTelefone").value;
+        const endereco = document.getElementById("clienteEndereco").value;
+        const pagamento = document.getElementById("clientePagamento").value;
+        const observacao = textareaCheckout.value;
+        const sacola = JSON.parse(localStorage.getItem("sacola")) || [];
 
-            if(!nome || !telefone || !endereco || !pagamento || sacola.length === 0){
-                alert("Preencha todos os campos e adicione pelo menos um pedido.");
-                return;
-            }
+        if(!nome || !telefone || !endereco || !pagamento || sacola.length === 0){
+            alert("Preencha todos os campos e adicione pelo menos um pedido.");
+            return;
+        }
 
-            let mensagem = `Olá! Gostaria de fazer o pedido:\n\n`;
-            sacola.forEach((item, i) => {
-                mensagem += `${i+1}. ${item.nome}\n`;
-                for(const cat in item.categorias){
-                    if(item.categorias[cat].length > 0){
-                        const nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
-                        mensagem += `   ${nomeCat}:\n`;
-                        item.categorias[cat].forEach(x => {
-                            mensagem += `      ${x}\n`;
-                        });
-                    }
+        let mensagem = `Olá! Gostaria de fazer o pedido:\n\n`;
+        let totalSacola = 0; // <- define e inicializa aqui
+
+        sacola.forEach((item, i) => {
+            totalSacola += item.valor; // <- soma o valor de cada item
+            mensagem += `${i+1}. ${item.nome}\n`;
+            for(const cat in item.categorias){
+                if(item.categorias[cat].length > 0){
+                    const nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
+                    mensagem += `   ${nomeCat}:\n`;
+                    item.categorias[cat].forEach(x => {
+                        mensagem += `      ${x}\n`;
+                    });
                 }
-                mensagem += `   Observação: ${item.observacao || "-"}\n\n`;
-            });
-            mensagem += `Nome: ${nome}\nTelefone: ${telefone}\nPagamento: ${pagamento}\nEndereço: ${endereco}\nObservação: ${observacao}`;
-
-            const url = `https://wa.me/5518991266455?text=${encodeURIComponent(mensagem)}`;
-            window.open(url,"_blank");
+            }
+            mensagem += `   Observação: ${item.observacao || "-"}\n\n`;
         });
-    }
+
+        mensagem += `Nome: ${nome}\nTelefone: ${telefone}\nPagamento: ${pagamento}\nEndereço: ${endereco}\nObservação: ${observacao}\n\n`;
+        mensagem += `Total da sacola: R$ ${totalSacola.toFixed(2)}`; // <- agora funciona
+
+        const url = `https://wa.me/5518991266455?text=${encodeURIComponent(mensagem)}`;
+        window.open(url,"_blank");
+    });
+}
+
 
 });
