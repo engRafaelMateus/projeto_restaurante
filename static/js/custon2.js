@@ -114,17 +114,18 @@ document.addEventListener("DOMContentLoaded", function() {
             const modalEl = document.getElementById("modalProduto");
             const modalInstance = modalEl.modalInstance;
 
-            let nome = document.getElementById("modalTitulo").textContent;
             const valorOriginal = parseFloat(document.getElementById("modalValor").textContent);
             let valorFinal = valorOriginal;
 
             // Metade selecionada
+            let nomePedido = document.getElementById("modalTitulo").textContent;
             const metadeSelecionada = document.querySelector("input[name='metade']:checked");
+            let valorBase = valorOriginal; // **valor da pizza base**
             if(metadeSelecionada){
                 const nomeMetade = metadeSelecionada.value;
                 const valorMetade = parseFloat(document.querySelector(`#modalMetade input[value="${nomeMetade}"]`).nextElementSibling.querySelector(".valor").textContent.replace("R$","").trim());
-                valorFinal = ((valorOriginal + valorMetade) / 2);
-                nome = `Meia ${nome} / Meia ${nomeMetade}`;
+                valorBase = (valorOriginal + valorMetade) / 2;
+                nomePedido = `Meia ${nomePedido} / Meia ${nomeMetade}`;
             }
 
             // Categorias
@@ -178,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const observacao = document.querySelector("#modalProduto #pedidoObservacao").value || "";
 
             const itemPedido = {
-                nome,
+                nome: nomePedido + ` - R$ ${valorBase.toFixed(2)}`, // **valor da pizza base apenas**
                 valor: valorFinal,
                 categorias,
                 observacao,
@@ -229,14 +230,14 @@ document.addEventListener("DOMContentLoaded", function() {
                     const nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
                     detalhes += `<strong>${nomeCat}:</strong><br>`;
                     detalhes += item.categorias[cat].map(x => `${x}<br>`).join("");
-                    detalhes += "<br>"; // linha extra entre categorias
+                    detalhes += "<br>";
                 }
             }
 
             const div = document.createElement("div");
             div.className = "p-2 border mb-2 rounded";
             div.innerHTML = `
-                <strong>${item.nome}</strong> - R$ ${totalItem.toFixed(2)}<br>
+                <strong>${item.nome}</strong><br>
                 ${detalhes || "Extras: Nenhum"}<br>
                 <span><strong>Observação:</strong> ${item.observacao || "-"}</span><br>
                 <button class="btn btn-sm btn-danger mt-2 btn-excluir-item" data-index="${i}">Excluir Item</button>
@@ -296,7 +297,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             let mensagem = `Olá! Gostaria de fazer o pedido:\n\n`;
             sacola.forEach((item, i) => {
-                mensagem += `${i+1}. ${item.nome} - R$ ${item.valor.toFixed(2)}\n`;
+                mensagem += `${i+1}. ${item.nome}\n`;
                 for(const cat in item.categorias){
                     if(item.categorias[cat].length > 0){
                         const nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
