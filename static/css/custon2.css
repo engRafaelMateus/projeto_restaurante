@@ -1,0 +1,235 @@
+.valor {
+    text-align: right;
+    padding: 20px 0 0 0;
+    color: #000;
+    font-size: 15px;
+    font-weight: bolder;
+}
+
+.img-cardapio {
+    width: 120px;
+    height: 120px;
+    object-fit: cover; /* corta e centraliza pra não distorcer */
+    border-radius: 10px; /* opcional, arredonda as bordas */
+    float: left;
+    margin: 15px 30px 0 15px;
+}
+
+.col-12.col-md-6 {
+    display: flex;
+    flex-direction: column;   /* organiza os filhos em coluna */
+    justify-content: center;  /* centraliza verticalmente */
+    height: 100%;             /* garante que ocupe todo o espaço da coluna */
+}
+
+#modalMetade label.selected {
+    background-color: #ffe082; /* amarelo suave */
+    border-color: #ffc107; /* laranja para borda */
+}
+
+#modalMetade .nome {
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+#modalMetade .valor {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+#modalMetade label {
+    cursor: pointer;
+    background-color: #f8f8f8;
+    transition: background-color 0.2s;
+}
+
+#modalMetade label:hover {
+    background-color: #ffe8b3;
+}
+
+.img-modal-wrapper {
+    width: 100%;
+    max-width: 300px;   /* limite máximo da largura */
+    margin: 0 auto;
+}
+
+.img-modal-wrapper img {
+    width: 100%;
+    height: auto;       /* mantém proporção da imagem */
+    max-height: 300px;  /* limite máximo da altura */
+    object-fit: cover;  /* corta sem distorcer */
+    border-radius: 10px;
+}
+
+.btn-common {
+    background-color: #ff6600;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+}
+
+.btn-common:hover {
+    background-color: #e55b00;
+    color: #fff;
+}
+
+.content {
+    padding: 15px 20px;
+}
+
+.link-cardapio{
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.link-cardapio:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Esconde o radio original */
+.custom-radio-hidden {
+  display: none !important;
+}
+
+/* Deixa o label estilizado como botão */
+.custom-radio-hidden:checked + label {
+  background-color: #ffc107; /* cor do warning preenchido */
+  color: #000; /* cor do texto quando selecionado */
+}
+
+
+.custom-radio-hidden + label {
+  background-color: #F7F3F2; /* cor do warning preenchido */
+  color: #000; /* cor do texto quando selecionado */
+}
+
+
+/* Estilo para a lista de extras dentro do pedido */
+#listaPedidos ul {
+    padding-left: 20px; /* espaço à esquerda da lista */
+    margin: 5px 0;      /* pequeno espaçamento acima e abaixo */
+    list-style-type: disc; /* bolinhas padrão */
+}
+
+#listaPedidos ul li {
+    margin-bottom: 3px; /* espaço entre os itens */
+    font-size: 14px;    /* deixa o texto um pouco menor que o padrão */
+    line-height: 1.4;   /* deixa mais fácil de ler */
+}
+
+/* ==============================
+   Bordas - Radio Moderno
+   ============================== */
+.borda-radio:checked + .radio-extra-label {
+    background-color: #ffb800; /* destaque quando selecionado */
+    color: #fff;
+    border-color: #ffb800;
+    box-shadow: 0 0 8px rgba(255, 184, 0, 0.6);
+}
+
+.radio-extra-label {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 5px 5px 5px 0;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    background-color: #f8f8f8;
+}
+
+.radio-extra-label:hover {
+    background-color: #ffe6a1;
+    border-color: #ffb800;
+}
+
+/* ==============================
+   Extras - Controles de quantidade
+   ============================== */
+.extra-item {
+    background-color: #f8f8f8;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* separa nome/valor e controles */
+    gap: 10px; /* espaço entre os elementos */
+    transition: all 0.2s ease;
+}
+
+.extra-item:hover {
+    border-color: #ffb800;
+    background-color: #fff4cc;
+}
+
+.extra-item .extra-nome-valor {
+    display: flex;
+    flex-direction: column; /* nome em cima, valor embaixo */
+    font-weight: 500;
+    min-width: 120px;
+}
+
+/* Botões de -/+ */
+.extra-item .btn-increase,
+.extra-item .btn-decrease {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-weight: bold;
+    color: #dc3545;            /* texto vermelho */
+    border: 2px solid #dc3545; /* borda vermelha */
+    background-color: #fff;     /* fundo branco */
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.extra-item .btn-increase:hover,
+.extra-item .btn-decrease:hover {
+    background-color: #dc3545; /* fundo vermelho */
+    color: #fff;               /* texto branco */
+    border-color: #dc3545;
+}
+
+/* Input de quantidade */
+.extra-quantity {
+    width: 40px;
+    height: 30px;
+    padding: 0 5px;
+    font-size: 14px;
+    text-align: center;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+}
+
+/* Container dos controles de quantidade */
+.extra-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* espaço entre botões e input */
+}
+
+/* ==============================
+   Pequenos ajustes para responsividade
+   ============================== */
+@media (max-width: 576px) {
+    .extra-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .extra-item .extra-nome-valor {
+        margin-bottom: 5px;
+    }
+}
+
