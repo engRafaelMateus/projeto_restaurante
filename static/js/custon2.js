@@ -227,7 +227,9 @@ document.addEventListener("DOMContentLoaded", function() {
             for(const cat in item.categorias){
                 if(item.categorias[cat].length > 0){
                     const nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
-                    detalhes += `<strong>${nomeCat}:</strong> ${item.categorias[cat].join(", ")}<br>`;
+                    detalhes += `<strong>${nomeCat}:</strong><br>`;
+                    detalhes += item.categorias[cat].map(x => `${x}<br>`).join("");
+                    detalhes += "<br>"; // linha extra entre categorias
                 }
             }
 
@@ -298,7 +300,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 for(const cat in item.categorias){
                     if(item.categorias[cat].length > 0){
                         const nomeCat = cat.charAt(0).toUpperCase() + cat.slice(1);
-                        mensagem += `   ${nomeCat}: ${item.categorias[cat].join(", ")}\n`;
+                        mensagem += `   ${nomeCat}:\n`;
+                        item.categorias[cat].forEach(x => {
+                            mensagem += `      ${x}\n`;
+                        });
                     }
                 }
                 mensagem += `   Observação: ${item.observacao || "-"}\n\n`;
