@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from .models import Categoria, Extra, Pizza, Borda, Refrigerante, Cerveja, Sobremesa
+from .models import Categoria, Extra, Pizza, Borda, Refrigerante, Cerveja, Sobremesa, Funcionario, Mesa, Pedido
+
 
 # ----------------------------
 # Categoria
@@ -65,3 +66,18 @@ class SobremesaAdmin(admin.ModelAdmin):
     search_fields = ('nome',)
     list_filter = ('ativo',)
     ordering = ('nome',)
+
+
+@admin.register(Funcionario)
+class FuncionarioAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'login', 'senha', 'ativo', 'criado', 'modificado')
+
+
+@admin.register(Mesa)
+class MesaAdmin(admin.ModelAdmin):
+    list_display = ('numero', 'status')
+
+
+@admin.register(Pedido)
+class PedidoAdmin(admin.ModelAdmin):
+    list_display = ('mesa', 'itens', 'total', 'status')
