@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <title>Comanda</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+<header>
+    <h1>Comanda</h1>
+    <p>Usuário: {{ request.user.get_full_name|default:request.user.username }}</p>
+
+    <form method="post" action="{% url 'logout' %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit">Sair</button>
+    </form>
+</header>
+
+<main>
+    <p>Aqui o garçom fará lançamentos de pedidos.</p>
+    <!-- espaço para UI/JS que você implementará -->
+</main>
+</body>
+</html>

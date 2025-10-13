@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <title>Caixa</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- adicione seus CSS/Bootstrap se quiser -->
+</head>
+<body>
+<header>
+    <h1>Caixa</h1>
+    <p>Usuário: {{ request.user.get_full_name|default:request.user.username }}</p>
+    <form method="post" action="{% url 'logout' %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit">Sair</button>
+    </form>
+</header>
+
+<main>
+    <p>Aqui você verá as mesas, itens e botões de abrir/fechar caixa.</p>
+
+    <!-- Exemplo de grade de mesas (você implementa a lógica JS/HTML/CSS) -->
+    <div id="mesas-grid">
+        <!-- colocar dinamicamente com JS ou renderizar via contexto -->
+    </div>
+</main>
+</body>
+</html>

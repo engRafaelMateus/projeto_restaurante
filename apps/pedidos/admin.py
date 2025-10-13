@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Categoria, Extra, Pizza, Borda, Refrigerante, Cerveja, Sobremesa, Funcionario, Mesa, Pedido
+from .models import Categoria, Extra, Pizza, Borda, Refrigerante, Cerveja, Sobremesa
 
 
 # ----------------------------
@@ -68,16 +68,3 @@ class SobremesaAdmin(admin.ModelAdmin):
     ordering = ('nome',)
 
 
-@admin.register(Funcionario)
-class FuncionarioAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'login', 'senha', 'ativo', 'criado', 'modificado')
-
-
-@admin.register(Mesa)
-class MesaAdmin(admin.ModelAdmin):
-    list_display = ('numero', 'status')
-
-
-@admin.register(Pedido)
-class PedidoAdmin(admin.ModelAdmin):
-    list_display = ('mesa', 'itens', 'total', 'status')

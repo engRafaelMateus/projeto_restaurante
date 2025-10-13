@@ -2,7 +2,7 @@ from symtable import Class
 from tempfile import template
 
 from django.views.generic import TemplateView
-from .models import Pizza, Extra, Refrigerante, Cerveja, Sobremesa, Borda, Pedido
+from .models import Pizza, Extra, Refrigerante, Cerveja, Sobremesa, Borda
 
 
 class IndexView(TemplateView):
@@ -41,18 +41,3 @@ class CardapioView(TemplateView):
         return context
 
 
-class CaixaView(TemplateView):
-    template_name = 'caixa.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['mesas'] = Pedido.objects.all()
-        context['itens'] = Pedido.objects.all()
-        context['total'] = Pedido.objects.all()
-        context['status'] = Pedido.objects.all()
-
-        return context
-
-
-class ComandaView(TemplateView):
-    template_name = 'caixa.html'
