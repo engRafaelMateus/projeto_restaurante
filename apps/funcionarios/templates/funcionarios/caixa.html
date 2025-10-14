@@ -1,28 +1,66 @@
+{% load static %}
 <!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <title>Caixa</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <!-- adicione seus CSS/Bootstrap se quiser -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .mesas-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .mesa {
+            border-radius: 10px;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+
+        .livre {
+            background-color: #28a745; /* verde */
+        }
+
+        .ocupada {
+            background-color: #dc3545; /* vermelha */
+        }
+    </style>
 </head>
 <body>
-<header>
-    <h1>Caixa</h1>
-    <p>Usuário: {{ request.user.get_full_name|default:request.user.username }}</p>
-    <form method="post" action="{% url 'logout' %}" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit">Sair</button>
-    </form>
+<header class="p-3 bg-dark text-white">
+    <div class="container">
+        <h1>Caixa</h1>
+        <p>Usuário: {{ request.user.get_full_name|default:request.user.username }}</p>
+        <form method="post" action="{% url 'logout' %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-light">Sair</button>
+        </form>
+    </div>
 </header>
 
-<main>
-    <p>Aqui você verá as mesas, itens e botões de abrir/fechar caixa.</p>
-
-    <!-- Exemplo de grade de mesas (você implementa a lógica JS/HTML/CSS) -->
-    <div id="mesas-grid">
-        <!-- colocar dinamicamente com JS ou renderizar via contexto -->
+<main class="container">
+    <div class="mesas-grid">
+        {% for mesa in mesas %}
+            <div class="mesa {{ mesa.status }}" ondblclick="abrirMesa({{ mesa.numero }})">
+                Mesa {{ mesa.numero }}
+            </div>
+        {% empty %}
+            <p>Nenhuma mesa cadastrada</p>
+        {% endfor %}
     </div>
 </main>
+
+<script>
+function abrirMesa(numero) {
+    alert("Abrindo detalhes da Mesa " + numero);
+    // Aqui futuramente abre o slide lateral
+}
+</script>
 </body>
 </html>

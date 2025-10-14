@@ -1448,142 +1448,56 @@ a:focus {
 
 
 /*---------------------------------------- 
-==========================================
+  6. Footer
+----------------------------------------*/
 
-  6.  Footer
-
-==========================================
-/*----------------------------------------*/
-
-#footer > .section {
-    position: relative;
-    overflow: hidden;
-    padding-top: 0;
-    margin-top: 100px;
+#footer {
+    width: 100%;
     background-color: #990100;
+    color: #fff;
+    position: relative;
+    z-index: 1;
 }
 
+/* Removendo position absolute da camada de posição */
 .footer_pos {
-    position: absolute;
-    bottom: 0;
-    z-index: 9;
+    position: relative; /* Antes era absolute */
     width: 100%;
 }
 
+/* Triângulo decorativo */
 #footer .triangle {
     width: 134%;
     height: 0;
     border-style: solid;
     border-width: 0 67vw 165px 67vw;
     border-color: transparent transparent #379889 transparent;
-    position: absolute;
+    position: relative; /* Antes era absolute */
     bottom: 0;
     left: -17%;
 }
 
-#footer .social-links {
-    float: right;
-}
-
-#footer .social-links .list-inline {
-    margin: 0;
-}
-
-#footer .social-links li {
-    padding: 0;
-    margin-left: 4px;
-}
-
-#footer .social-links a {
-    color: #fff;
-    border: 1px solid;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-    -webkit-transition: all .3s ease-out;
-    -moz-transition: all .3s ease-out;
-    -ms-transition: all .3s ease-out;
-    -o-transition: all .3s ease-out;
-    transition: all .3s ease-out;
-}
-
-#footer .social-links a:hover {
-    background-color: #fff;
-    color: #990100;
-}
-
-#footer .footer-text {
-    color: #fff;
-    font-size: 17px;
-}
-
-#footer .copyright {
-    background-color: #990100;
-    padding: 20px 0;
-}
-
+/* Conteúdo principal do footer */
 #footer .footer_content {
+    padding: 50px 45px 30px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
     background-color: #f6a525;
-    color: #fff;
-    padding: 0 45px 0 20px;
 }
 
-#footer .week_day {
-    float: left;
-    background-color: #f6a525;
-    position: relative;
-    z-index: 1;
-    padding-right: 20px;
-}
-
-#footer .footer_ttl {
-    text-transform: uppercase;
-    font-family: 'ChunkFiveEx';
-    font-size: 18px;
-    margin-top: 30px;
-}
-
-#footer .footer_ttl_padd {
-    padding-left: 30px;
-}
-
-#footer .footer_border {
-    padding-left: 30px;
-    border-left: 1px solid #d69021;
-    min-height: 150px;
-    margin-bottom: 20px;
-    margin-top: 20px;
-}
-
-#footer .footer_txt {
-    font-family: 'Montserrat-Light';
-    line-height: 24px;
-    font-size: 14px;
-    margin-top: 20px;
-    padding-left: 30px;
-}
-
+/* Colunas do footer */
 #footer .footer_col {
-    padding-right: 20px;
-    border-right: 1px solid red;
+    flex: 1 1 200px; /* Para se ajustar ao tamanho da tela */
+    padding: 0 20px;
 }
 
-#footer .week_time {
-    float: right;
-    background-color: #f6a525;
-    padding-left: 20px;
-    position: relative;
-    z-index: 1;
-}
-
+/* Linha dos horários */
 #footer .week_row {
     position: relative;
     overflow: hidden;
     font-family: 'Montserrat-Light';
+    margin-bottom: 15px;
 }
 
 #footer .week_row:after {
@@ -1593,45 +1507,55 @@ a:focus {
     left: 0;
     height: 0;
     width: 100%;
-    border-top: 1px dotted #fff
+    border-top: 1px dotted #fff;
 }
 
-#footer .footer_cnt {
-    position: relative;
-    padding-left: 20px;
-    margin-bottom: 20px;
+/* Copyright */
+#footer .copyright {
+    background-color: #990100;
+    text-align: center;
+    padding: 20px 0;
 }
 
-#footer .footer_cnt .fa {
-    font-size: 17px;
-    position: absolute;
-    left: 0;
-    top: 0;
-}
-
-#footer .week_time {
-    min-width: 127px;
-}
-
-#footer .footer_cnt span {
-    font-family: 'Montserrat-Light';
-}
-
-#footer .week_time_node {
-    padding: 0 10px;
-}
-
+/* Texto */
 #footer .copy_text {
     font-family: 'Montserrat-Bold';
     font-size: 14px;
     text-transform: uppercase;
     color: #fff;
+    margin: 0;
 }
 
-#footer .copy_text span {
-    margin: 0 6px;
+/* Ajustando links sociais */
+#footer .social-links {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
 }
 
+#footer .social-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid #fff;
+    color: #fff;
+    transition: all 0.3s;
+}
+
+#footer .social-links a:hover {
+    background-color: #fff;
+    color: #990100;
+}
+
+/* Map */
+#googleMap {
+    width: 100%;
+    height: 500px;
+    margin-bottom: 0; /* Antes era 180px */
+}
 
 
 /*----------------------------------------
@@ -1917,3 +1841,4 @@ a:focus {
      transform: translateY(-15px);
     }    
 }
+

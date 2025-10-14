@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.urls import path
 from django.shortcuts import redirect
 from django.contrib.admin import AdminSite
-from .models import Funcionario, Mesa, Pedido
+from .models import Funcionario, Mesa, Pedido, ConfiguracaoMesas
 
 # ---------- Redirecionamento automático ----------
 
@@ -29,7 +29,29 @@ class FuncionarioAdmin(admin.ModelAdmin):
 @admin.register(Mesa, site=admin_site)
 class MesaAdmin(admin.ModelAdmin):
     list_display = ('numero', 'status')
+    ordering = ['numero']
 
 @admin.register(Pedido, site=admin_site)
 class PedidoAdmin(admin.ModelAdmin):
-    list_display = ('mesa', 'itens', 'total', 'status')
+    list_display = ('mesa', 'total', 'status')
+
+@admin.register(ConfiguracaoMesas, site=admin_site)
+class ConfiguracaoMesasAdmin(admin.ModelAdmin):
+    list_display = ('quantidade_mesas',)
+
+    def save_model(self, request, obj, form, change):
+        """Ao salvar, cria/remove mesas automaticamente"""
+        super().save_model(request, obj, form, change)
+
+        from .models import Mesa
+
+        total = obj.quantidade_mesas
+        atuais = Mesa.objects.count()
+
+        # Criar mesas que faltam
+        for i in range(atuais + 1, total + 1):
+            Mesa.objects.create(numero=i, status='livre')
+
+        # Remover mesas a mais
+        if atuais > total:
+            Mesa.objects.filter(numero__gt=total).delete()

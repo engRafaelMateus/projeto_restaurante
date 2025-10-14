@@ -31,16 +31,31 @@ class Funcionario(Base):
         return self.nome
 
 
+class ConfiguracaoMesas(models.Model):
+    quantidade_mesas = models.PositiveIntegerField(default=10, verbose_name="Quantidade de Mesas")
+
+    class Meta:
+        verbose_name = "Configuração de Mesas"
+        verbose_name_plural = "Configuração de Mesas"
+
+    def __str__(self):
+        return f"{self.quantidade_mesas} mesas configuradas"
+
+
 class Mesa(Base):
     numero = models.IntegerField()
-    status = models.CharField(max_length=10, choices=[('livre', 'Livre'), ('ocupada', 'Ocupada')])
+    status = models.CharField(
+        max_length=10,
+        choices=[('livre', 'Livre'), ('ocupada', 'Ocupada')],
+        default='livre')
 
     class Meta:
         verbose_name = 'Mesa'
         verbose_name_plural = 'Mesas'
+        ordering = ['numero']
 
     def __str__(self):
-        return self.numero
+        return f"Mesa {self.numero}"
 
 
 class Pedido(Base):
@@ -54,4 +69,4 @@ class Pedido(Base):
         verbose_name_plural = 'Pedidos'
 
     def __str__(self):
-        return self.mesa
+        return f"Pedido Mesa {self.mesa.numero}"

@@ -3,7 +3,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-
+from .models import Mesa
 
 # Decorators para verificar grupos
 def grupo_caixa(user):
@@ -23,6 +23,18 @@ class CaixaView(TemplateView):
 @method_decorator(user_passes_test(grupo_garcon, login_url='/admin/'), name='dispatch')
 class ComandaView(TemplateView):
     template_name = 'funcionarios/comanda.html'
+
+
+
+@method_decorator(login_required(login_url='/admin/login/'), name='dispatch')
+@method_decorator(user_passes_test(grupo_caixa, login_url='/admin/'), name='dispatch')
+class CaixaView(TemplateView):
+    template_name = 'funcionarios/caixa.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['mesas'] = Mesa.objects.all()
+        return context
 
 
 # ---------- Mixin para verificar grupo ----------
