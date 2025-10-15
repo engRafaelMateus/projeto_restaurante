@@ -22,20 +22,20 @@ admin_site = MyAdminSite(name='myadmin')
 
 # ---------- Registro dos modelos ----------
 
-@admin.register(Funcionario, site=admin_site)
+@admin.register(Funcionario)
 class FuncionarioAdmin(admin.ModelAdmin):
     list_display = ('nome', 'login', 'ativo', 'criado', 'modificado')
 
-@admin.register(Mesa, site=admin_site)
+@admin.register(Mesa)
 class MesaAdmin(admin.ModelAdmin):
     list_display = ('numero', 'status')
     ordering = ['numero']
 
-@admin.register(Pedido, site=admin_site)
+@admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
     list_display = ('mesa', 'total', 'status')
 
-@admin.register(ConfiguracaoMesas, site=admin_site)
+@admin.register(ConfiguracaoMesas)
 class ConfiguracaoMesasAdmin(admin.ModelAdmin):
     list_display = ('quantidade_mesas',)
 

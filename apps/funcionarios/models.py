@@ -61,8 +61,12 @@ class Mesa(Base):
 class Pedido(Base):
     mesa = models.ForeignKey(Mesa, on_delete=models.CASCADE)
     itens = models.JSONField()
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=10, choices=[('aberto', 'Aberto'), ('fechado', 'Fechado')])
+    total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(
+        max_length=10,
+        choices=[('aberto', 'Aberto'), ('fechado', 'Fechado')],
+        default='aberto'
+    )
 
     class Meta:
         verbose_name = 'Pedido'

@@ -1,24 +1,40 @@
+{% load static %}
 <!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <title>Comanda</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<header>
-    <h1>Comanda</h1>
-    <p>Usuário: {{ request.user.get_full_name|default:request.user.username }}</p>
-
-    <form method="post" action="{% url 'logout' %}" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit">Sair</button>
-    </form>
+<header class="p-3 border-bottom d-flex justify-content-between">
+    <div>
+        <h4>Comanda</h4>
+        <small>Usuário: {{ request.user.get_full_name|default:request.user.username }}</small>
+    </div>
+    <div>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-secondary">Sair</button>
+        </form>
+    </div>
 </header>
 
-<main>
-    <p>Aqui o garçom fará lançamentos de pedidos.</p>
-    <!-- espaço para UI/JS que você implementará -->
+<main class="container my-4">
+    <p>Aqui a interface do garçom (lançar pedidos). Você pode reaproveitar o modal de cardápio que já tem — ou eu crio
+        uma interface separada.</p>
+
+    <div class="row">
+        <div class="col-12">
+            <p>Lista de mesas disponíveis abaixo (mesmo dados do caixa):</p>
+            <ul>
+                {% for mesa in mesas %}
+                <li>Mesa {{ mesa.numero }} — {{ mesa.get_status_display }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
 </main>
 </body>
 </html>
