@@ -56,16 +56,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // -----------------------------
-    // Variáveis
-    // -----------------------------
     let mesaAtual = null;
     let pedidoAtual = [];
     let pedidoId = null;
     let categoriaSelecionada = null;
     let itemSelecionado = null;
 
-    // Elementos
     const btnAbrirMesa = document.getElementById("btnAbrirMesa");
     const inputMesa = document.getElementById("inputMesa");
     const categoriasContainer = document.getElementById("categorias-container");
@@ -77,9 +73,6 @@
     const itemObservacao = document.getElementById("itemObservacao");
     const btnLancarItem = document.getElementById("btnLancarItem");
 
-    // -----------------------------
-    // Função CSRF
-    // -----------------------------
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== "") {
@@ -95,16 +88,6 @@
         return cookieValue;
     }
 
-    // -----------------------------
-    // Desativar categorias
-    // -----------------------------
-    function desativarCategorias() {
-        categoriasContainer.innerHTML = "";
-    }
-
-    // -----------------------------
-    // Atualizar resumo do pedido
-    // -----------------------------
     function atualizarResumo() {
         if (pedidoAtual.length === 0) {
             pedidoDiv.innerHTML = "<p>Pedido vazio</p>";
@@ -127,9 +110,6 @@
         btnEnviarPedido.disabled = false;
     }
 
-    // -----------------------------
-    // Abrir mesa
-    // -----------------------------
     btnAbrirMesa.onclick = async () => {
         const numero = inputMesa.value;
         if (!numero) {
@@ -138,36 +118,21 @@
         }
         mesaAtual = numero;
 
-        // Abrir ou criar pedido
-        const res = await fetch("/funcionarios/api/abrir_mesa/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": getCookie("csrftoken")
-            },
-            body: JSON.stringify({ mesa: mesaAtual })
-        });
-
-        if (!res.ok) {
-            alert("Erro ao abrir mesa!");
-            return;
-        }
-
-        const data = await res.json();
-        pedidoId = data.pedido_id;
-        pedidoAtual = data.itens || [];
-
-        atualizarResumo();
-
         // Buscar categorias
         const catRes = await fetch("/funcionarios/api/listar_categorias/");
         const catData = await catRes.json();
         ativarCategorias(catData.categorias);
+
+        // Tenta buscar pedido já existente
+        const resPedido = await fetch(`/funcionarios/api/pedido_aberto/${mesaAtual}/`);
+        if (resPedido.ok) {
+            const data = await resPedido.json();
+            pedidoAtual = data.itens || [];
+            pedidoId = data.pedido_id;
+            atualizarResumo();
+        }
     };
 
-    // -----------------------------
-    // Ativar categorias
-    // -----------------------------
     function ativarCategorias(categorias) {
         categoriasContainer.innerHTML = "";
         categorias.forEach(cat => {
@@ -179,17 +144,9 @@
         });
     }
 
-    // -----------------------------
-    // Abrir categoria e modal de itens
-    // -----------------------------
     async function abrirCategoria(categoriaId, nome) {
         categoriaSelecionada = categoriaId;
-
         const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
-        if (!res.ok) {
-            alert("Erro ao buscar itens da categoria!");
-            return;
-        }
         const data = await res.json();
 
         listaItens.innerHTML = "";
@@ -206,43 +163,24 @@
         modalItens.show();
     }
 
-    // -----------------------------
-    // Selecionar item
-    // -----------------------------
     function selecionarItem(div, item) {
         const itens = listaItens.querySelectorAll(".item");
         itens.forEach(i => i.classList.remove("bg-success"));
-
         div.classList.add("bg-success");
         itemSelecionado = { ...item, qtd: 1, observacao: itemObservacao.value };
     }
 
-    // -----------------------------
-    // Lançar item no pedido
-    // -----------------------------
-    btnLancarItem.onclick = async () => {
+    btnLancarItem.onclick = () => {
         if (!itemSelecionado) {
             alert("Selecione um item!");
             return;
         }
-
         itemSelecionado.observacao = itemObservacao.value;
         pedidoAtual.push(itemSelecionado);
         atualizarResumo();
-
-        // Salvar via API
-        await fetch("/funcionarios/api/adicionar_item/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
-            body: JSON.stringify({ mesa: mesaAtual, item: itemSelecionado })
-        });
-
         modalItens.hide();
     };
 
-    // -----------------------------
-    // Enviar pedido
-    // -----------------------------
     btnEnviarPedido.onclick = async () => {
         if (!mesaAtual || pedidoAtual.length === 0) {
             alert("Mesa ou itens inválidos!");
@@ -258,18 +196,13 @@
         const data = await res.json();
         if (data.ok) {
             alert("Pedido enviado com sucesso!");
-            mesaAtual = null;
             pedidoAtual = [];
-            pedidoId = null;
-            categoriaSelecionada = null;
-            desativarCategorias();
+            pedidoId = data.pedido_id;
             atualizarResumo();
-            inputMesa.value = "";
         } else {
             alert("Erro ao enviar pedido: " + data.erro);
         }
     };
 </script>
-
 </body>
 </html>

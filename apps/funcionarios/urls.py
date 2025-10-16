@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/listar_itens/<int:categoria_id>/', api_views.listar_itens, name='listar_itens'),
     path('api/adicionar_item/', api_views.adicionar_item, name='adicionar_item'),
     path('api/enviar_pedido/', api_views.enviar_pedido, name='enviar_pedido'),
+    path('api/pedido_aberto/<int:mesa_num>/', api_views.pedido_aberto, name='pedido_aberto'),
 
     # Caixa
     path('api/fechar_pedido/<int:pk>/', api_views.fechar_pedido, name='fechar_pedido'),

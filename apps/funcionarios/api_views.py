@@ -50,32 +50,42 @@ def listar_categorias(request):
 @user_passes_test(grupo_garcon)
 def listar_itens(request, categoria_id):
     try:
-        categoria = Categoria.objects.get(pk=categoria_id)
+        categoria = Categoria.objects.get(pk=categoria_id, ativo=True)
     except Categoria.DoesNotExist:
         return JsonResponse({"error": "Categoria não encontrada"}, status=404)
 
-    # Busca todos os itens da categoria
     itens = []
 
     # Pizzas
-    pizzas = Pizza.objects.filter(categoria=categoria)
+    pizzas = Pizza.objects.filter(categoria=categoria, ativo=True)
     for p in pizzas:
         itens.append({"id": p.id, "nome": p.nome, "preco": float(p.valor)})
 
     # Sobremesas
-    sobremesas = Sobremesa.objects.filter(categoria=categoria)
+    sobremesas = Sobremesa.objects.filter(categoria=categoria, ativo=True)
     for s in sobremesas:
         itens.append({"id": s.id, "nome": s.nome, "preco": float(s.valor)})
 
     # Cervejas
-    cervejas = Cerveja.objects.filter(categoria=categoria)
+    cervejas = Cerveja.objects.filter(categoria=categoria, ativo=True)
     for c in cervejas:
         itens.append({"id": c.id, "nome": c.nome, "preco": float(c.valor)})
 
     # Refrigerantes
-    refrigerantes = Refrigerante.objects.filter(categoria=categoria)
+    refrigerantes = Refrigerante.objects.filter(categoria=categoria, ativo=True)
     for r in refrigerantes:
         itens.append({"id": r.id, "nome": r.nome, "preco": float(r.valor)})
+
+    # Extras (opcional)
+    extras = Extra.objects.filter(categorias=categoria, ativo=True)
+    for e in extras:
+        itens.append({"id": e.id, "nome": e.nome, "preco": float(e.valor)})
+
+    # Bordas – só se quiser para essa categoria específica
+    if categoria.nome.lower() == "bordas":
+        bordas = Borda.objects.filter(ativo=True)
+        for b in bordas:
+            itens.append({"id": b.id, "nome": b.nome, "preco": float(b.valor)})
 
     return JsonResponse({"itens": itens})
 
@@ -184,16 +194,42 @@ def enviar_pedido(request):
             return JsonResponse({"ok": False, "erro": "Dados incompletos"})
 
         mesa, _ = Mesa.objects.get_or_create(numero=mesa_num)
-        total = sum([float(i["preco"]) for i in itens])
 
-        pedido = Pedido.objects.create(
+        # Verifica se já existe pedido aberto
+        pedido, created = Pedido.objects.get_or_create(
             mesa=mesa,
-            itens=itens,
-            total=total,
-            status='aberto'
+            status='aberto',
+            defaults={"itens": [], "total": 0}
         )
 
-        return JsonResponse({"ok": True, "pedido_id": pedido.id})
+        # Adiciona os itens novos ao pedido existente
+        itens_existentes = pedido.itens or []
+        itens_existentes.extend(itens)
+        pedido.itens = itens_existentes
+        pedido.total = sum(i.get("qtd", 1) * float(i.get("valor", 0)) for i in itens_existentes)
+        pedido.save()
+
+        return JsonResponse({"ok": True, "pedido_id": pedido.id, "total": float(pedido.total)})
 
     except Exception as e:
         return JsonResponse({"ok": False, "erro": str(e)})
+
+
+
+@login_required
+@user_passes_test(grupo_garcon)
+def pedido_aberto(request, mesa_num):
+    try:
+        mesa = Mesa.objects.get(numero=mesa_num)
+        pedido = Pedido.objects.get(mesa=mesa, status='aberto')
+        return JsonResponse({
+            "pedido_id": pedido.id,
+            "itens": pedido.itens or [],
+            "total": float(pedido.total or 0)
+        })
+    except (Mesa.DoesNotExist, Pedido.DoesNotExist):
+        return JsonResponse({
+            "pedido_id": None,
+            "itens": [],
+            "total": 0
+        })
