@@ -4,7 +4,6 @@ from django.views.generic import TemplateView
 from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .models import Mesa, Pedido
-from django.conf import settings
 from django.utils.safestring import mark_safe
 import json
 

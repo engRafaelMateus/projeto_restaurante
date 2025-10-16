@@ -1,40 +1,230 @@
-{% load static %}
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
-    <meta charset="utf-8">
-    <title>Comanda</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>Comanda - Garçom</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .item-card { cursor: pointer; }
+        .item-card.selected { background-color: #d1e7dd; }
+    </style>
 </head>
-<body>
-<header class="p-3 border-bottom d-flex justify-content-between">
-    <div>
-        <h4>Comanda</h4>
-        <small>Usuário: {{ request.user.get_full_name|default:request.user.username }}</small>
-    </div>
-    <div>
-        <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button class="btn btn-outline-secondary">Sair</button>
-        </form>
-    </div>
-</header>
+<body class="p-3">
+<div class="container">
+    <h1>Comanda - Garçom</h1>
 
-<main class="container my-4">
-    <p>Aqui a interface do garçom (lançar pedidos). Você pode reaproveitar o modal de cardápio que já tem — ou eu crio
-        uma interface separada.</p>
+    <!-- Mesa -->
+    <div class="mb-3">
+        <label for="inputMesa" class="form-label">Número da Mesa</label>
+        <input type="number" class="form-control" id="inputMesa">
+    </div>
+    <button class="btn btn-success mb-3" id="btnAbrirMesa">Abrir Mesa</button>
+    <button class="btn btn-secondary mb-3" id="btnLimparMesa">Limpar Mesa</button>
+    <span id="mesaInfo" class="ms-3 fw-bold"></span>
 
-    <div class="row">
-        <div class="col-12">
-            <p>Lista de mesas disponíveis abaixo (mesmo dados do caixa):</p>
-            <ul>
-                {% for mesa in mesas %}
-                <li>Mesa {{ mesa.numero }} — {{ mesa.get_status_display }}</li>
-                {% endfor %}
-            </ul>
+    <!-- Categorias -->
+    <div id="categorias-container" class="mb-3"></div>
+
+    <!-- Resumo do pedido -->
+    <div id="pedido" class="mb-3"><p>Pedido vazio</p></div>
+
+</div>
+
+<!-- Modal Itens -->
+<div class="modal fade" id="modalItens" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCategoriaTitulo">Itens</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="listaItens"></div>
+                <div class="mt-3 d-flex align-items-center">
+                    <label class="me-2">Qtd:</label>
+                    <button id="qtyMinus" class="btn btn-outline-secondary me-2">-</button>
+                    <span id="qtyValue" class="me-2">1</span>
+                    <button id="qtyPlus" class="btn btn-outline-secondary me-3">+</button>
+                    <input type="text" id="itemObservacao" class="form-control" placeholder="Observações (opcional)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" id="btnAdicionarItem">Adicionar Item</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
         </div>
     </div>
-</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let mesaAtual = null;
+    let pedidoAtual = [];
+    let pedidoId = null;
+    let categoriaSelecionada = null;
+    let itemSelecionado = null;
+
+    const btnAbrirMesa = document.getElementById("btnAbrirMesa");
+    const btnLimparMesa = document.getElementById("btnLimparMesa");
+    const inputMesa = document.getElementById("inputMesa");
+    const mesaInfo = document.getElementById("mesaInfo");
+    const categoriasContainer = document.getElementById("categorias-container");
+    const pedidoDiv = document.getElementById("pedido");
+
+    const modalItens = new bootstrap.Modal(document.getElementById("modalItens"));
+    const listaItens = document.getElementById("listaItens");
+    const qtyMinus = document.getElementById("qtyMinus");
+    const qtyPlus = document.getElementById("qtyPlus");
+    const qtyValue = document.getElementById("qtyValue");
+    const itemObservacao = document.getElementById("itemObservacao");
+    const btnAdicionarItem = document.getElementById("btnAdicionarItem");
+
+    function desativarCategorias() {
+        categoriasContainer.innerHTML = "";
+    }
+
+    function ativarCategorias(categorias) {
+        categoriasContainer.innerHTML = "";
+        categorias.forEach(cat => {
+            const btn = document.createElement("button");
+            btn.textContent = cat.nome;
+            btn.className = "btn btn-primary me-2 mb-2";
+            btn.onclick = () => abrirCategoria(cat.id, cat.nome);
+            categoriasContainer.appendChild(btn);
+        });
+    }
+
+    btnAbrirMesa.onclick = async () => {
+        const numero = inputMesa.value;
+        if (!numero) { alert("Digite o número da mesa!"); return; }
+        mesaAtual = numero;
+
+        const res = await fetch("/funcionarios/api/abrir_mesa/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+            body: JSON.stringify({ mesa: mesaAtual })
+        });
+        const data = await res.json();
+        pedidoId = data.pedido_id;
+        pedidoAtual = data.itens || [];
+
+        mesaInfo.textContent = `Mesa ${mesaAtual}`;
+        atualizarResumo();
+
+        const catRes = await fetch("/funcionarios/api/listar_categorias/");
+        const catData = await catRes.json();
+        ativarCategorias(catData.categorias);
+    };
+
+    btnLimparMesa.onclick = () => {
+        mesaAtual = null;
+        pedidoAtual = [];
+        pedidoId = null;
+        categoriaSelecionada = null;
+        itemSelecionado = null;
+        inputMesa.value = "";
+        mesaInfo.textContent = "";
+        desativarCategorias();
+        atualizarResumo();
+    };
+
+    async function abrirCategoria(categoriaId, nome) {
+        categoriaSelecionada = categoriaId;
+        const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
+        const data = await res.json();
+
+        listaItens.innerHTML = "";
+        data.itens.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "item d-flex justify-content-between p-2 mb-1 border";
+            div.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
+            div.onclick = () => selecionarItem(div, item);
+            listaItens.appendChild(div);
+        });
+
+        qtyValue.textContent = "1";
+        itemObservacao.value = "";
+        itemSelecionado = null;
+
+        modalItens.show();
+    }
+
+    function selecionarItem(div, item) {
+        const itens = listaItens.querySelectorAll(".item");
+        itens.forEach(i => i.classList.remove("bg-success", "text-white"));
+        div.classList.add("bg-success", "text-white");
+        itemSelecionado = { ...item, qtd: parseInt(qtyValue.textContent), observacao: itemObservacao.value };
+    }
+
+    qtyMinus.onclick = () => {
+        let val = parseInt(qtyValue.textContent);
+        if (val > 1) qtyValue.textContent = val - 1;
+    };
+    qtyPlus.onclick = () => {
+        let val = parseInt(qtyValue.textContent);
+        qtyValue.textContent = val + 1;
+    };
+
+    btnAdicionarItem.onclick = async () => {
+        if (!itemSelecionado) { alert("Selecione um item!"); return; }
+        itemSelecionado.qtd = parseInt(qtyValue.textContent);
+        itemSelecionado.observacao = itemObservacao.value;
+
+        pedidoAtual.push(itemSelecionado);
+        atualizarResumo();
+
+        await fetch("/funcionarios/api/adicionar_item/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+            body: JSON.stringify({ mesa: mesaAtual, item: itemSelecionado })
+        });
+
+        modalItens.hide();
+    };
+
+    function atualizarResumo() {
+        if (pedidoAtual.length === 0) { pedidoDiv.innerHTML = "<p>Pedido vazio</p>"; return; }
+        pedidoDiv.innerHTML = "";
+        pedidoAtual.forEach(i => {
+            const div = document.createElement("div");
+            div.textContent = `${i.nome} x${i.qtd} - R$ ${(i.preco*i.qtd).toFixed(2)} ${i.observacao ? `(${i.observacao})` : ""}`;
+            pedidoDiv.appendChild(div);
+        });
+        const total = pedidoAtual.reduce((acc,i) => acc + i.preco*i.qtd,0);
+        const totalDiv = document.createElement("div");
+        totalDiv.className = "fw-bold mt-2";
+        totalDiv.textContent = `Total: R$ ${total.toFixed(2)}`;
+        pedidoDiv.appendChild(totalDiv);
+    }
+
+    const btnEnviarPedido = document.createElement("button");
+    btnEnviarPedido.textContent = "Enviar Pedido";
+    btnEnviarPedido.className = "btn btn-success mt-3";
+    btnEnviarPedido.onclick = async () => {
+        if (!mesaAtual || pedidoAtual.length === 0) { alert("Mesa ou itens inválidos!"); return; }
+        const res = await fetch("/funcionarios/api/enviar_pedido/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mesa: mesaAtual, itens: pedidoAtual })
+        });
+        const data = await res.json();
+        if (data.ok) { alert("Pedido enviado com sucesso!"); btnLimparMesa.click(); }
+        else { alert("Erro ao enviar pedido: " + data.erro); }
+    };
+    pedidoDiv.parentNode.appendChild(btnEnviarPedido);
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + "=")) { cookieValue = decodeURIComponent(cookie.substring(name.length + 1)); break; }
+            }
+        }
+        return cookieValue;
+    }
+
+</script>
 </body>
 </html>
