@@ -56,153 +56,204 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    let mesaAtual = null;
-    let pedidoAtual = [];
-    let pedidoId = null;
-    let categoriaSelecionada = null;
-    let itemSelecionado = null;
+    // -----------------------------
+// Variáveis
+// -----------------------------
+let mesaAtual = null;
+let pedidoAtual = [];     // todos os itens do pedido, inclusive antigos
+let pedidoId = null;
+let categoriaSelecionada = null;
+let itemSelecionado = null;
+let itensNovos = [];      // só os itens adicionados desde que a mesa abriu
 
-    const btnAbrirMesa = document.getElementById("btnAbrirMesa");
-    const inputMesa = document.getElementById("inputMesa");
-    const categoriasContainer = document.getElementById("categorias-container");
-    const pedidoDiv = document.getElementById("pedido-resumo");
-    const btnEnviarPedido = document.getElementById("btnEnviarPedido");
+// Elementos
+const btnAbrirMesa = document.getElementById("btnAbrirMesa");
+const inputMesa = document.getElementById("inputMesa");
+const categoriasContainer = document.getElementById("categorias-container");
+const pedidoDiv = document.getElementById("pedido-resumo");
+const btnEnviarPedido = document.getElementById("btnEnviarPedido");
 
-    const modalItens = new bootstrap.Modal(document.getElementById("modalItens"));
-    const listaItens = document.getElementById("listaItens");
-    const itemObservacao = document.getElementById("itemObservacao");
-    const btnLancarItem = document.getElementById("btnLancarItem");
+const modalItens = new bootstrap.Modal(document.getElementById("modalItens"));
+const listaItens = document.getElementById("listaItens");
+const itemObservacao = document.getElementById("itemObservacao");
+const btnLancarItem = document.getElementById("btnLancarItem");
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let cookie of cookies) {
-                cookie = cookie.trim();
-                if (cookie.startsWith(name + "=")) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+// -----------------------------
+// Função CSRF
+// -----------------------------
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
-        return cookieValue;
+    }
+    return cookieValue;
+}
+
+// -----------------------------
+// Atualizar resumo do pedido
+// -----------------------------
+function atualizarResumo() {
+    if (pedidoAtual.length === 0) {
+        pedidoDiv.innerHTML = "<p>Pedido vazio</p>";
+        btnEnviarPedido.disabled = true;
+        return;
+    }
+    pedidoDiv.innerHTML = "";
+    pedidoAtual.forEach((i) => {
+        const div = document.createElement("div");
+        div.textContent = `${i.nome} x${i.qtd} - R$ ${(i.valor * i.qtd).toFixed(2)} ${i.observacao ? `(${i.observacao})` : ""}`;
+        pedidoDiv.appendChild(div);
+    });
+
+    const total = pedidoAtual.reduce((acc, i) => acc + i.valor * i.qtd, 0);
+    const totalDiv = document.createElement("div");
+    totalDiv.className = "fw-bold mt-2";
+    totalDiv.textContent = `Total: R$ ${total.toFixed(2)}`;
+    pedidoDiv.appendChild(totalDiv);
+
+    btnEnviarPedido.disabled = itensNovos.length === 0;
+}
+
+// -----------------------------
+// Abrir mesa
+// -----------------------------
+btnAbrirMesa.onclick = async () => {
+    const numero = inputMesa.value;
+    if (!numero) {
+        alert("Digite o número da mesa!");
+        return;
+    }
+    mesaAtual = numero;
+
+    // Abrir ou criar pedido
+    const res = await fetch("/funcionarios/api/abrir_mesa/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: JSON.stringify({ mesa: mesaAtual })
+    });
+
+    if (!res.ok) {
+        alert("Erro ao abrir mesa!");
+        return;
     }
 
-    function atualizarResumo() {
-        if (pedidoAtual.length === 0) {
-            pedidoDiv.innerHTML = "<p>Pedido vazio</p>";
-            btnEnviarPedido.disabled = true;
-            return;
-        }
-        pedidoDiv.innerHTML = "";
-        pedidoAtual.forEach((i) => {
-            const div = document.createElement("div");
-            div.textContent = `${i.nome} x${i.qtd} - R$ ${(i.valor * i.qtd).toFixed(2)} ${i.observacao ? `(${i.observacao})` : ""}`;
-            pedidoDiv.appendChild(div);
-        });
+    const data = await res.json();
+    pedidoId = data.pedido_id;
+    pedidoAtual = data.itens || [];
+    itensNovos = []; // reseta itens novos ao abrir a mesa
 
-        const total = pedidoAtual.reduce((acc, i) => acc + i.valor * i.qtd, 0);
-        const totalDiv = document.createElement("div");
-        totalDiv.className = "fw-bold mt-2";
-        totalDiv.textContent = `Total: R$ ${total.toFixed(2)}`;
-        pedidoDiv.appendChild(totalDiv);
+    atualizarResumo();
 
-        btnEnviarPedido.disabled = false;
+    // Buscar categorias
+    const catRes = await fetch("/funcionarios/api/listar_categorias/");
+    const catData = await catRes.json();
+    ativarCategorias(catData.categorias);
+};
+
+// -----------------------------
+// Ativar categorias
+// -----------------------------
+function ativarCategorias(categorias) {
+    categoriasContainer.innerHTML = "";
+    categorias.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.textContent = cat.nome;
+        btn.className = "btn btn-primary me-2 mb-2";
+        btn.onclick = () => abrirCategoria(cat.id, cat.nome);
+        categoriasContainer.appendChild(btn);
+    });
+}
+
+// -----------------------------
+// Abrir categoria e modal de itens
+// -----------------------------
+async function abrirCategoria(categoriaId, nome) {
+    categoriaSelecionada = categoriaId;
+
+    const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
+    if (!res.ok) {
+        alert("Erro ao buscar itens da categoria!");
+        return;
+    }
+    const data = await res.json();
+
+    listaItens.innerHTML = "";
+    data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item d-flex justify-content-between p-2 mb-1 border";
+        div.textContent = `${item.nome} - R$ ${item.valor.toFixed(2)}`;
+        div.onclick = () => selecionarItem(div, item);
+        listaItens.appendChild(div);
+    });
+
+    itemObservacao.value = "";
+    itemSelecionado = null;
+    modalItens.show();
+}
+
+// -----------------------------
+// Selecionar item
+// -----------------------------
+function selecionarItem(div, item) {
+    const itens = listaItens.querySelectorAll(".item");
+    itens.forEach(i => i.classList.remove("bg-success"));
+
+    div.classList.add("bg-success");
+    itemSelecionado = { ...item, qtd: 1, observacao: itemObservacao.value };
+}
+
+// -----------------------------
+// Lançar item no pedido
+// -----------------------------
+btnLancarItem.onclick = () => {
+    if (!itemSelecionado) {
+        alert("Selecione um item!");
+        return;
     }
 
-    btnAbrirMesa.onclick = async () => {
-        const numero = inputMesa.value;
-        if (!numero) {
-            alert("Digite o número da mesa!");
-            return;
-        }
-        mesaAtual = numero;
+    itemSelecionado.observacao = itemObservacao.value;
+    pedidoAtual.push(itemSelecionado);
+    itensNovos.push(itemSelecionado); // adiciona aos itens novos
+    atualizarResumo();
 
-        // Buscar categorias
-        const catRes = await fetch("/funcionarios/api/listar_categorias/");
-        const catData = await catRes.json();
-        ativarCategorias(catData.categorias);
+    modalItens.hide();
+};
 
-        // Tenta buscar pedido já existente
-        const resPedido = await fetch(`/funcionarios/api/pedido_aberto/${mesaAtual}/`);
-        if (resPedido.ok) {
-            const data = await resPedido.json();
-            pedidoAtual = data.itens || [];
-            pedidoId = data.pedido_id;
-            atualizarResumo();
-        }
-    };
-
-    function ativarCategorias(categorias) {
-        categoriasContainer.innerHTML = "";
-        categorias.forEach(cat => {
-            const btn = document.createElement("button");
-            btn.textContent = cat.nome;
-            btn.className = "btn btn-primary me-2 mb-2";
-            btn.onclick = () => abrirCategoria(cat.id, cat.nome);
-            categoriasContainer.appendChild(btn);
-        });
+// -----------------------------
+// Enviar pedido
+// -----------------------------
+btnEnviarPedido.onclick = async () => {
+    if (!mesaAtual || itensNovos.length === 0) {
+        alert("Mesa ou itens inválidos!");
+        return;
     }
 
-    async function abrirCategoria(categoriaId, nome) {
-        categoriaSelecionada = categoriaId;
-        const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
-        const data = await res.json();
+    const res = await fetch("/funcionarios/api/enviar_pedido/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+        body: JSON.stringify({ mesa: mesaAtual, itens: itensNovos })
+    });
 
-        listaItens.innerHTML = "";
-        data.forEach(item => {
-            const div = document.createElement("div");
-            div.className = "item d-flex justify-content-between p-2 mb-1 border";
-            div.textContent = `${item.nome} - R$ ${item.valor.toFixed(2)}`;
-            div.onclick = () => selecionarItem(div, item);
-            listaItens.appendChild(div);
-        });
-
-        itemObservacao.value = "";
-        itemSelecionado = null;
-        modalItens.show();
-    }
-
-    function selecionarItem(div, item) {
-        const itens = listaItens.querySelectorAll(".item");
-        itens.forEach(i => i.classList.remove("bg-success"));
-        div.classList.add("bg-success");
-        itemSelecionado = { ...item, qtd: 1, observacao: itemObservacao.value };
-    }
-
-    btnLancarItem.onclick = () => {
-        if (!itemSelecionado) {
-            alert("Selecione um item!");
-            return;
-        }
-        itemSelecionado.observacao = itemObservacao.value;
-        pedidoAtual.push(itemSelecionado);
+    const data = await res.json();
+    if (data.ok) {
+        alert("Pedido enviado com sucesso!");
+        itensNovos = []; // limpa itens novos
         atualizarResumo();
-        modalItens.hide();
-    };
+    } else {
+        alert("Erro ao enviar pedido: " + data.erro);
+    }
+};
 
-    btnEnviarPedido.onclick = async () => {
-        if (!mesaAtual || pedidoAtual.length === 0) {
-            alert("Mesa ou itens inválidos!");
-            return;
-        }
-
-        const res = await fetch("/funcionarios/api/enviar_pedido/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
-            body: JSON.stringify({ mesa: mesaAtual, itens: pedidoAtual })
-        });
-
-        const data = await res.json();
-        if (data.ok) {
-            alert("Pedido enviado com sucesso!");
-            pedidoAtual = [];
-            pedidoId = data.pedido_id;
-            atualizarResumo();
-        } else {
-            alert("Erro ao enviar pedido: " + data.erro);
-        }
-    };
 </script>
 </body>
 </html>
