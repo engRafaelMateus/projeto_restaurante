@@ -7,7 +7,6 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 
 
-
 def grupo_caixa(user):
     return user.groups.filter(name='GrupoCaixa').exists()
 
@@ -26,10 +25,16 @@ def abrir_mesa(request):
     numero_mesa = data.get("mesa")
     if not numero_mesa:
         return JsonResponse({"error": "Mesa não informada"}, status=400)
+
     mesa, _ = Mesa.objects.get_or_create(numero=numero_mesa)
     pedido, created = Pedido.objects.get_or_create(mesa=mesa, status="aberto", defaults={"itens": []})
-    return JsonResponse(
-        {"pedido_id": pedido.id, "mesa": mesa.numero, "itens": pedido.itens, "total": float(pedido.total or 0)})
+
+    return JsonResponse({
+        "pedido_id": pedido.id,
+        "mesa": mesa.numero,
+        "itens": pedido.itens or [],
+        "total": float(pedido.total or 0)
+    })
 
 
 # Listar categorias
