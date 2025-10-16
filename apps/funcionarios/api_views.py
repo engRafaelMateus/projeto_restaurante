@@ -141,40 +141,42 @@ def listar_categorias(request):
 # -----------------------------
 # Lista itens por categoria
 # -----------------------------
+@login_required
+@user_passes_test(grupo_garcon)
 def listar_itens(request, categoria_id):
     itens = []
 
     # Pizzas
-    pizzas = Pizza.objects.filter(categoria_id=categoria_id, ativo=True)
-    for p in pizzas:
+    for p in Pizza.objects.filter(categoria_id=categoria_id, ativo=True):
         itens.append({"id": p.id, "nome": p.nome, "valor": float(p.valor)})
 
-    # Extras
-    extras = Extra.objects.filter(categorias__id=categoria_id, ativo=True)
-    for e in extras:
-        itens.append({"id": e.id, "nome": e.nome, "valor": float(e.valor)})
+    # Sobremesas
+    for s in Sobremesa.objects.filter(categoria_id=categoria_id, ativo=True):
+        itens.append({"id": s.id, "nome": s.nome, "valor": float(s.valor)})
 
     # Refrigerantes
-    refrigerantes = Refrigerante.objects.filter(categoria_id=categoria_id, ativo=True)
-    for r in refrigerantes:
+    for r in Refrigerante.objects.filter(categoria_id=categoria_id, ativo=True):
         itens.append({"id": r.id, "nome": r.nome, "valor": float(r.valor)})
 
     # Cervejas
-    cervejas = Cerveja.objects.filter(categoria_id=categoria_id, ativo=True)
-    for c in cervejas:
+    for c in Cerveja.objects.filter(categoria_id=categoria_id, ativo=True):
         itens.append({"id": c.id, "nome": c.nome, "valor": float(c.valor)})
 
-    # Sobremesas
-    sobremesas = Sobremesa.objects.filter(categoria_id=categoria_id, ativo=True)
-    for s in sobremesas:
-        itens.append({"id": s.id, "nome": s.nome, "valor": float(s.valor)})
+    # Subcategorias
+    subcategorias = []
 
-    # Bordas (opcional, se quiser incluir)
+    extras = Extra.objects.filter(categorias__id=categoria_id, ativo=True)
+    if extras.exists():
+        subcategorias.append(
+            {"tipo": "Extra", "itens": [{"id": e.id, "nome": e.nome, "valor": float(e.valor)} for e in extras]})
+
     bordas = Borda.objects.filter(ativo=True)
-    for b in bordas:
-        itens.append({"id": b.id, "nome": b.nome, "valor": float(b.valor)})
+    # Só adicionar bordas se a categoria for Pizza
+    if bordas.exists() and Pizza.objects.filter(categoria_id=categoria_id, ativo=True).exists():
+        subcategorias.append(
+            {"tipo": "Borda", "itens": [{"id": b.id, "nome": b.nome, "valor": float(b.valor)} for b in bordas]})
 
-    return JsonResponse(itens, safe=False)
+    return JsonResponse({"itens": itens, "subcategorias": subcategorias})
 
 
 # -----------------------------
@@ -213,7 +215,6 @@ def enviar_pedido(request):
 
     except Exception as e:
         return JsonResponse({"ok": False, "erro": str(e)})
-
 
 
 @login_required

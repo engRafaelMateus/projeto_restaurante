@@ -46,6 +46,10 @@
             <div class="modal-body">
                 <div id="listaItens" class="d-flex flex-column gap-2"></div>
                 <div class="mt-3">
+                    <h6>Extras / Subitens:</h6>
+                    <div id="subitens-container" class="d-flex flex-column gap-1"></div>
+                </div>
+                <div class="mt-3">
                     <textarea class="form-control" id="itemObservacao" placeholder="Observações"></textarea>
                 </div>
             </div>
@@ -59,7 +63,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // -----------------------------
     // Variáveis globais
+    // -----------------------------
     let mesaAtual = null;
     let pedidoAtual = [];
     let pedidoId = null;
@@ -67,7 +73,9 @@
     let itemSelecionado = null;
     let itensNovos = [];
 
+    // -----------------------------
     // Elementos DOM
+    // -----------------------------
     const inputMesa = document.getElementById("inputMesa");
     const btnAbrirMesa = document.getElementById("btnAbrirMesa");
     const btnLimparMesa = document.getElementById("btnLimparMesa");
@@ -75,12 +83,15 @@
     const pedidoDiv = document.getElementById("pedido-resumo");
     const btnEnviarPedido = document.getElementById("btnEnviarPedido");
 
-    const modalItens = new bootstrap.Modal(document.getElementById("modalItens"));
+    const modalItensEl = document.getElementById("modalItens");
+    const modalItens = new bootstrap.Modal(modalItensEl); // objeto correto do Bootstrap
     const listaItens = document.getElementById("listaItens");
     const itemObservacao = document.getElementById("itemObservacao");
     const btnLancarItem = document.getElementById("btnLancarItem");
 
-    // Função para pegar CSRF token
+    // -----------------------------
+    // CSRF
+    // -----------------------------
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== "") {
@@ -96,7 +107,9 @@
         return cookieValue;
     }
 
+    // -----------------------------
     // Atualiza resumo do pedido
+    // -----------------------------
     function atualizarResumo() {
         pedidoDiv.innerHTML = "";
         if (pedidoAtual.length === 0) {
@@ -120,7 +133,9 @@
         btnEnviarPedido.disabled = itensNovos.length === 0;
     }
 
+    // -----------------------------
     // Limpar mesa
+    // -----------------------------
     btnLimparMesa.onclick = () => {
         inputMesa.value = "";
         mesaAtual = null;
@@ -131,7 +146,9 @@
         document.getElementById("lista-itens-container").innerHTML = "";
     };
 
+    // -----------------------------
     // Abrir mesa
+    // -----------------------------
     btnAbrirMesa.onclick = async () => {
         const numero = inputMesa.value;
         if (!numero) { alert("Digite o número da mesa!"); return; }
@@ -156,7 +173,9 @@
         ativarCategorias(catData.categorias);
     };
 
+    // -----------------------------
     // Ativar categorias
+    // -----------------------------
     function ativarCategorias(categorias) {
         categoriasContainer.innerHTML = "";
         categorias.forEach(cat => {
@@ -168,17 +187,20 @@
         });
     }
 
-    // Abrir categoria e listar itens
+    // -----------------------------
+    // Abrir categoria
+    // -----------------------------
     async function abrirCategoria(categoriaId, nome) {
         categoriaSelecionada = categoriaId;
 
         const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
         if (!res.ok) { alert("Erro ao buscar itens da categoria!"); return; }
 
-        const data = await res.json();
+        const data = await res.json(); // data: { itens: [...], subcategorias: [...] }
         listaItens.innerHTML = "";
 
-        data.forEach(item => {
+        // Itens principais
+        data.itens.forEach(item => {
             const div = document.createElement("div");
             div.className = "item p-2 border rounded";
             div.textContent = `${item.nome} - R$ ${item.valor.toFixed(2)}`;
@@ -186,19 +208,41 @@
             listaItens.appendChild(div);
         });
 
+        // Subcategorias (Extras/Bordas)
+        if (data.subcategorias) {
+            data.subcategorias.forEach(sub => {
+                const title = document.createElement("div");
+                title.className = "fw-bold mt-2";
+                title.textContent = sub.tipo;
+                listaItens.appendChild(title);
+
+                sub.itens.forEach(item => {
+                    const div = document.createElement("div");
+                    div.className = "item p-2 border rounded";
+                    div.textContent = `${item.nome} - R$ ${item.valor.toFixed(2)}`;
+                    div.onclick = () => selecionarItem(div, item);
+                    listaItens.appendChild(div);
+                });
+            });
+        }
+
         itemObservacao.value = "";
         itemSelecionado = null;
-        modalItens.show();
+        modalItens.show(); // abre o modal
     }
 
+    // -----------------------------
     // Selecionar item
+    // -----------------------------
     function selecionarItem(div, item) {
         listaItens.querySelectorAll(".item").forEach(i => i.classList.remove("bg-success"));
         div.classList.add("bg-success");
         itemSelecionado = { ...item, qtd: 1, observacao: itemObservacao.value };
     }
 
+    // -----------------------------
     // Lançar item
+    // -----------------------------
     btnLancarItem.onclick = () => {
         if (!itemSelecionado) { alert("Selecione um item!"); return; }
         itemSelecionado.observacao = itemObservacao.value;
@@ -208,7 +252,9 @@
         modalItens.hide();
     };
 
+    // -----------------------------
     // Enviar pedido
+    // -----------------------------
     btnEnviarPedido.onclick = async () => {
         if (!mesaAtual || itensNovos.length === 0) { alert("Mesa ou itens inválidos!"); return; }
 
@@ -233,5 +279,6 @@
         }
     };
 </script>
+
 </body>
 </html>

@@ -67,6 +67,7 @@ class Pizza(Base):
     categoria = models.ForeignKey(Categoria, verbose_name='Categoria', on_delete=models.CASCADE)
     valor = models.DecimalField('Valor', max_digits=5, decimal_places=2)
     extras = models.ManyToManyField(Extra, blank=True, related_name='pizzas')
+    bordas = models.ManyToManyField(Borda, blank=True, related_name='bordas')
 
     imagem_width = models.PositiveIntegerField(null=True, blank=True)
     imagem_height = models.PositiveIntegerField(null=True, blank=True)
