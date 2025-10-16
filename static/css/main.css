@@ -1842,3 +1842,74 @@ a:focus {
     }    
 }
 
+/* ===============================
+   COMANDA - GARÇOM
+   =============================== */
+
+.comanda-body {
+    padding-bottom: 160px; /* espaço para resumo fixo */
+}
+
+.comanda-item {
+    cursor: pointer;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.comanda-item.bg-success {
+    background-color: #198754 !important;
+    color: white;
+}
+
+#comanda-pedido-resumo-fixo {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #f8f9fa;
+    border-top: 2px solid #198754;
+    padding: 10px;
+    z-index: 1000;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+}
+
+#comanda-categorias-container button {
+    min-width: 100px;
+    margin-bottom: 0.5rem;
+}
+
+.comanda-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.comanda-mesa-group {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.comanda-mesa-input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.comanda-mesa-input-group input {
+    flex-grow: 1;
+}
+
+.comanda-mesa-input-group button {
+    flex-grow: 1;
+}
+
+/* Modal itens */
+#comanda-modal-itens .modal-body textarea {
+    resize: vertical;
+}
+
+
