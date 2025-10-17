@@ -9,35 +9,32 @@
     <link href="{% static 'css/main.css' %}" type="text/css" rel="stylesheet"/>
 </head>
 <body>
-<header class="d-flex justify-content-between align-items-center p-3 border-bottom">
-    <div>
-        <h1 class="mb-3 text-center">Comanda - Garçom</h1>
-        <small>Usuário: {{ request.user.get_full_name|default:request.user.username }}</small>
-    </div>
-    <div>
-        <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button class="btn btn-outline-secondary">Sair</button>
-        </form>
-    </div>
-</header>
-
-<div class="container">
+<div id="func-comanda" class="container">
+    <header class="d-flex justify-content-between align-items-center p-3 border-bottom">
+        <div>
+            <h1 class="mb-0">Comanda - {{ request.user.get_full_name|default:request.user.username }}</h1>
+        </div>
+        <div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary">Sair</button>
+            </form>
+        </div>
+    </header>
 
     <!-- Mesa -->
-    <div class="mb-3 d-flex flex-column flex-sm-row align-items-stretch gap-2">
+    <div class="my-3 d-flex flex-column flex-sm-row align-items-stretch gap-2">
         <input type="number" class="form-control flex-grow-1" id="inputMesa" placeholder="Número da Mesa">
         <div class="d-flex gap-2">
             <button class="btn btn-secondary flex-grow-1" id="btnLimparMesa">Limpar</button>
-            <!-- OBS: 'Abrir Mesa' agora NÃO cria nada no banco. Só carrega pedido existente (se houver) -->
             <button class="btn btn-success flex-grow-1" id="btnAbrirMesa">Abrir Mesa</button>
         </div>
     </div>
 
     <!-- Categorias -->
-    <div id="categorias-container" class="mb-3 d-flex flex-wrap gap-2 justify-content-start"></div>
+    <div id="func-categorias" class="mb-3 d-flex flex-wrap gap-2"></div>
 
-    <!-- Lista de Itens / Modal -->
+    <!-- Espaço onde opcionalmente pode renderizar itens inline se desejar -->
     <div id="lista-itens-container"></div>
 </div>
 
@@ -48,19 +45,34 @@
 </div>
 
 <!-- Modal Itens -->
-<div class="modal fade" id="modalItens" tabindex="-1">
+<div class="modal fade" id="modalItens" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalCategoriaTitulo">Itens</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">Selecionar Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
-                <div id="listaItens" class="d-flex flex-column gap-2"></div>
+                <div id="listaItens" class="d-flex flex-column gap-2 mb-3"></div>
 
-                <div class="mt-3">
-                    <h6>Extras / Subitens:</h6>
-                    <div id="subitens-container" class="d-flex flex-column gap-1"></div>
+                <div id="subitens-wrapper" class="mb-3">
+                    <!-- subcategorias serão inseridas aqui -->
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Quantidade</small>
+                        <div id="global-spinner" class="func-spinner mt-1">
+                            <button type="button" class="btn btn-outline-secondary btn-decrease">−</button>
+                            <input type="number" min="1" value="1" class="form-control form-control-sm"
+                                   id="inputQuantidade" style="width:70px;">
+                            <button type="button" class="btn btn-outline-secondary btn-increase">+</button>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted">Valor unitário</div>
+                        <div id="modal-valor" class="func-price-summary">R$ 0,00</div>
+                    </div>
                 </div>
 
                 <div class="mt-3">
@@ -75,261 +87,256 @@
     </div>
 </div>
 
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-/* Comportamento:
-   - Abrir Mesa: não cria nada no banco. Verifica se já existe pedido aberto (GET pedido_aberto).
-   - Lançar Item: armazena localmente (pedidoAtual, itensNovos).
-   - Enviar Pedido: chama enviar_pedido -> cria mesa/pedido no servidor.
-*/
+    (() => {
+        let mesaAtual = null;
+        let pedidoAtual = [];
+        let pedidoId = null;
+        let itensNovos = [];
+        let selectedMain = null;
+        let modalInstance = null;
 
-let mesaAtual = null;
-let pedidoAtual = [];    // todos os itens exibidos no resumo (itens antigos + novos)
-let pedidoId = null;
-let categoriaSelecionada = null;
-let itemSelecionado = null;
-let itensNovos = [];     // só itens adicionados nesta sessão antes de enviar
+        const inputMesa = document.getElementById('inputMesa');
+        const btnAbrirMesa = document.getElementById('btnAbrirMesa');
+        const btnLimparMesa = document.getElementById('btnLimparMesa');
+        const categoriasContainer = document.getElementById('func-categorias');
+        const pedidoDiv = document.getElementById('pedido-resumo');
+        const btnEnviarPedido = document.getElementById('btnEnviarPedido');
 
-// DOM
-const inputMesa = document.getElementById("inputMesa");
-const btnAbrirMesa = document.getElementById("btnAbrirMesa");
-const btnLimparMesa = document.getElementById("btnLimparMesa");
-const categoriasContainer = document.getElementById("categorias-container");
-const pedidoDiv = document.getElementById("pedido-resumo");
-const btnEnviarPedido = document.getElementById("btnEnviarPedido");
+        const modalEl = document.getElementById('modalItens');
+        modalInstance = new bootstrap.Modal(modalEl);
+        const listaItens = document.getElementById('listaItens');
+        const subitensWrapper = document.getElementById('subitens-wrapper');
+        const inputQuantidade = document.getElementById('inputQuantidade');
+        const btnIncrease = modalEl.querySelector('.btn-increase');
+        const btnDecrease = modalEl.querySelector('.btn-decrease');
+        const modalValor = document.getElementById('modal-valor');
+        const itemObservacao = document.getElementById('itemObservacao');
+        const btnLancarItem = document.getElementById('btnLancarItem');
 
-const modalItensEl = document.getElementById("modalItens");
-const modalItens = new bootstrap.Modal(modalItensEl);
-const listaItens = document.getElementById("listaItens");
-const itemObservacao = document.getElementById("itemObservacao");
-const btnLancarItem = document.getElementById("btnLancarItem");
-
-// CSRF helper
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== "") {
-        const cookies = document.cookie.split(";");
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + "=")) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
             }
+            return cookieValue;
         }
-    }
-    return cookieValue;
-}
 
-// Atualiza a área de resumo (itens + total)
-function atualizarResumo() {
-    pedidoDiv.innerHTML = "";
-    if (pedidoAtual.length === 0) {
-        pedidoDiv.innerHTML = "<p>Pedido vazio</p>";
-        btnEnviarPedido.disabled = true;
-        return;
-    }
+        function money(v){ return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
+        function getItemPriceField(item){ return (item.valor !== undefined)? Number(item.valor) : ((item.preco !== undefined)? Number(item.preco):0); }
 
-    pedidoAtual.forEach(i => {
-        const div = document.createElement("div");
-        // usar "valor" como propriedade consistente
-        const valor = (i.valor !== undefined) ? i.valor : (i.preco !== undefined ? i.preco : 0);
-        div.textContent = `${i.nome} x${i.qtd || 1} - R$ ${(valor * (i.qtd || 1)).toFixed(2)} ${i.observacao ? `(${i.observacao})` : ""}`;
-        pedidoDiv.appendChild(div);
-    });
-
-    const total = pedidoAtual.reduce((acc, i) => {
-        const v = (i.valor !== undefined) ? i.valor : (i.preco !== undefined ? i.preco : 0);
-        return acc + v * (i.qtd || 1);
-    }, 0);
-
-    const totalDiv = document.createElement("div");
-    totalDiv.className = "fw-bold mt-2";
-    totalDiv.textContent = `Total: R$ ${total.toFixed(2)}`;
-    pedidoDiv.appendChild(totalDiv);
-
-    // habilita enviar apenas se houver itens novos a enviar
-    btnEnviarPedido.disabled = itensNovos.length === 0;
-}
-
-// Limpar campo mesa / estado local
-btnLimparMesa.onclick = () => {
-    inputMesa.value = "";
-    mesaAtual = null;
-    pedidoAtual = [];
-    itensNovos = [];
-    pedidoId = null;
-    atualizarResumo();
-    categoriasContainer.innerHTML = "";
-    listaItens.innerHTML = "";
-};
-
-// Ao clicar "Abrir Mesa" — NÃO criar mesa: só verificar pedido aberto e carregar categorias
-btnAbrirMesa.onclick = async () => {
-    const numero = inputMesa.value && inputMesa.value.trim();
-    if (!numero) { alert("Digite o número da mesa!"); return; }
-    mesaAtual = numero;
-
-    // 1) verificar se já existe pedido aberto (rota pedido_aberto/<mesa_num>/)
-    try {
-        const check = await fetch(`/funcionarios/api/pedido_aberto/${encodeURIComponent(mesaAtual)}/`);
-        if (!check.ok) {
-            // Se endpoint inexistente/err, só seguimos com a interface localmente
-            console.warn("pedido_aberto retornou erro ou não disponível");
-            pedidoAtual = [];
-            pedidoId = null;
-        } else {
-            const checkData = await check.json();
-            if (checkData && checkData.pedido_id) {
-                // carregar pedido existente no resumo (não criar nada)
-                pedidoId = checkData.pedido_id;
-                pedidoAtual = checkData.itens || [];
-            } else {
-                // sem pedido aberto: estado local limpo
-                pedidoAtual = [];
-                pedidoId = null;
-            }
-        }
-    } catch (e) {
-        console.error("Erro ao verificar pedido_aberto:", e);
-        pedidoAtual = [];
-        pedidoId = null;
-    }
-
-    // reset itens novos (vai começar a adicionar localmente)
-    itensNovos = [];
-    atualizarResumo();
-
-    // 2) buscar categorias (sempre)
-    try {
-        const catRes = await fetch("/funcionarios/api/listar_categorias/");
-        if (catRes.ok) {
-            const catData = await catRes.json();
-            ativarCategorias(catData.categorias || []);
-        } else {
-            alert("Erro ao buscar categorias");
-        }
-    } catch (e) {
-        console.error(e);
-        alert("Erro ao buscar categorias");
-    }
-};
-
-// renderiza botões de categorias
-function ativarCategorias(categorias) {
-    categoriasContainer.innerHTML = "";
-    categorias.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.textContent = cat.nome;
-        btn.className = "btn btn-primary flex-grow-1";
-        btn.onclick = () => abrirCategoria(cat.id, cat.nome);
-        categoriasContainer.appendChild(btn);
-    });
-}
-
-// Abrir categoria: pede itens + subcategorias (sua view já devolve itens e subcategorias)
-async function abrirCategoria(categoriaId, nome) {
-    categoriaSelecionada = categoriaId;
-    try {
-        const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
-        if (!res.ok) { alert("Erro ao buscar itens da categoria!"); return; }
-        const data = await res.json(); // data: { itens: [...], subcategorias: [...] } ou array/similar (suas views têm variação)
-        listaItens.innerHTML = "";
-
-        // algumas versões do seu view retornam objetos com chaves 'itens'/'subcategorias'
-        const itensPrincipais = data.itens || data; // se for return JsonResponse(itens, safe=False) -> data é array
-        if (Array.isArray(itensPrincipais)) {
-            itensPrincipais.forEach(item => {
-                const valor = item.valor !== undefined ? item.valor : (item.preco !== undefined ? item.preco : 0);
-                const div = document.createElement("div");
-                div.className = "item p-2 border rounded";
-                div.textContent = `${item.nome} - R$ ${Number(valor).toFixed(2)}`;
-                div.onclick = () => selecionarItem(div, item);
-                listaItens.appendChild(div);
+        function atualizarResumo(){
+            pedidoDiv.innerHTML = '';
+            if(!pedidoAtual.length){ pedidoDiv.innerHTML='<p>Pedido vazio</p>'; btnEnviarPedido.disabled=true; return; }
+            pedidoAtual.forEach(it=>{
+                const row=document.createElement('div');
+                const qtd = it.qtd || 1;
+                const valorUnit = Number(it.valor || it.preco || 0);
+                row.textContent = `${it.nome} x${qtd} - ${money(valorUnit*qtd)}`;
+                pedidoDiv.appendChild(row);
             });
+            const total = pedidoAtual.reduce((acc,it)=>acc + (Number(it.valor||it.preco||0)*(it.qtd||1)),0);
+            const totalDiv = document.createElement('div'); totalDiv.className='fw-bold mt-2'; totalDiv.textContent=`Total: ${money(total)}`;
+            pedidoDiv.appendChild(totalDiv);
+            btnEnviarPedido.disabled = itensNovos.length===0;
         }
 
-        // subcategorias quando presentes (sua view forneceu subcategorias)
-        if (data.subcategorias && Array.isArray(data.subcategorias)) {
-            data.subcategorias.forEach(sub => {
-                const title = document.createElement("div");
-                title.className = "fw-bold mt-2";
-                title.textContent = sub.tipo || "Subitens";
-                listaItens.appendChild(title);
-
-                (sub.itens || []).forEach(item => {
-                    const valor = item.valor !== undefined ? item.valor : (item.preco !== undefined ? item.preco : 0);
-                    const div = document.createElement("div");
-                    div.className = "item p-2 border rounded";
-                    div.textContent = `${item.nome} - R$ ${Number(valor).toFixed(2)}`;
-                    div.onclick = () => selecionarItem(div, item);
-                    listaItens.appendChild(div);
-                });
-            });
-        }
-
-        // limpar seleção/observação
-        itemObservacao.value = "";
-        itemSelecionado = null;
-        modalItens.show();
-    } catch (e) {
-        console.error(e);
-        alert("Erro ao abrir categoria");
-    }
-}
-
-// Seleciona item na lista modal
-function selecionarItem(div, item) {
-    listaItens.querySelectorAll(".item").forEach(i => i.classList.remove("bg-success"));
-    div.classList.add("bg-success");
-    // normalizar nome/valor/qtd
-    const valor = item.valor !== undefined ? item.valor : (item.preco !== undefined ? item.preco : 0);
-    itemSelecionado = { nome: item.nome, valor: Number(valor), qtd: 1, observacao: itemObservacao.value, origem_id: item.id };
-}
-
-// Lançar item (só local)
-btnLancarItem.onclick = () => {
-    if (!itemSelecionado) { alert("Selecione um item!"); return; }
-    itemSelecionado.observacao = itemObservacao.value;
-    // adiciona ao resumo local
-    pedidoAtual.push({...itemSelecionado});
-    // marca como novo — será enviado no envio final
-    itensNovos.push({...itemSelecionado});
-    atualizarResumo();
-    modalItens.hide();
-};
-
-// Enviar pedido — AQUI se cria a mesa e o pedido no backend
-btnEnviarPedido.onclick = async () => {
-    if (!mesaAtual || itensNovos.length === 0) { alert("Mesa ou itens inválidos!"); return; }
-
-    try {
-        const res = await fetch("/funcionarios/api/enviar_pedido/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
-            body: JSON.stringify({ mesa: mesaAtual, itens: itensNovos })
+        btnLimparMesa.addEventListener('click', ()=>{
+            inputMesa.value=''; mesaAtual=null; pedidoAtual=[]; itensNovos=[]; pedidoId=null; selectedMain=null;
+            atualizarResumo(); categoriasContainer.innerHTML=''; listaItens.innerHTML=''; subitensWrapper.innerHTML='';
         });
 
-        const data = await res.json();
-        if (res.ok && data.ok) {
-            alert("Pedido enviado com sucesso!");
-            // limpar estado local
-            itensNovos = [];
-            pedidoAtual = [];
-            pedidoId = data.pedido_id || null;
+        btnAbrirMesa.addEventListener('click', async ()=>{
+            const numero = String(inputMesa.value||'').trim();
+            if(!numero){ alert('Digite o número da mesa!'); return; }
+            mesaAtual = numero;
+
+            try{
+                const res = await fetch(`/funcionarios/api/pedido_aberto/${encodeURIComponent(mesaAtual)}/`);
+                if(res.ok){
+                    const data = await res.json();
+                    pedidoId = data?.pedido_id || null;
+                    pedidoAtual = data?.itens || [];
+                }else{ pedidoAtual=[]; pedidoId=null; }
+            }catch(e){ console.warn('pedido_aberto erro',e); pedidoAtual=[]; pedidoId=null; }
+            itensNovos=[];
             atualizarResumo();
-            categoriasContainer.innerHTML = "";
-            listaItens.innerHTML = "";
-            inputMesa.value = "";
-            mesaAtual = null;
-        } else {
-            alert("Erro ao enviar pedido: " + (data.erro || JSON.stringify(data)));
-            console.error("enviar_pedido retornou:", data);
+
+            try{
+                const catRes = await fetch('/funcionarios/api/listar_categorias/');
+                if(!catRes.ok) throw new Error('Erro listar categorias');
+                const cdata = await catRes.json();
+                ativarCategorias(cdata.categorias || []);
+            }catch(e){ console.error(e); alert('Erro ao carregar categorias'); }
+        });
+
+        function ativarCategorias(categorias){
+            categoriasContainer.innerHTML='';
+            categorias.forEach(cat=>{
+                const btn = document.createElement('button');
+                btn.type='button'; btn.className='btn btn-primary'; btn.textContent=cat.nome;
+                btn.addEventListener('click', ()=>abrirCategoria(cat.id,cat.nome));
+                categoriasContainer.appendChild(btn);
+            });
         }
-    } catch (e) {
-        console.error("Erro enviar_pedido:", e);
-        alert("Erro ao enviar pedido (ver console).");
-    }
-};
+
+        async function abrirCategoria(categoriaId,nome){
+            try{
+                const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
+                if(!res.ok){ alert('Erro ao buscar itens da categoria'); return; }
+                const data = await res.json();
+                const itensPrincipais = Array.isArray(data.itens)?data.itens:data;
+                const subcategorias = data.subcategorias || [];
+
+                listaItens.innerHTML=''; subitensWrapper.innerHTML=''; selectedMain=null; inputQuantidade.value=1; itemObservacao.value=''; modalValor.textContent=money(0);
+
+                // Render itens principais
+                const groupName='func-main-item'; const wrapperMain=document.createElement('div'); wrapperMain.className='d-flex flex-column gap-2';
+                itensPrincipais.forEach((it,idx)=>{
+                    const valor = getItemPriceField(it);
+                    const row=document.createElement('label'); row.className='func-item-row'; row.setAttribute('data-id',it.id);
+                    row.innerHTML = `
+                        <div class="d-flex align-items-center gap-3">
+                            <input type="radio" name="${groupName}" class="form-check-input me-2 func-main-radio" data-idx="${idx}">
+                            <div><div class="fw-bold">${it.nome}</div><div class="text-muted small">${money(valor)}</div></div>
+                        </div>
+                        <div class="func-spinner">
+                            <button type="button" class="btn btn-outline-secondary decrease-mini">−</button>
+                            <input type="number" min="1" value="1" class="form-control form-control-sm qty-mini" style="width:70px">
+                            <button type="button" class="btn btn-outline-secondary increase-mini">+</button>
+                        </div>
+                    `;
+                    row.addEventListener('click',(ev)=>{
+                        const target = ev.target;
+                        if(target.classList.contains('increase-mini') || target.classList.contains('decrease-mini') || target.classList.contains('qty-mini')) return;
+                        const radio = row.querySelector('.func-main-radio'); radio.checked=true;
+                        onMainSelected(it,row);
+                    });
+                    row.querySelector('.func-main-radio').addEventListener('change',()=>onMainSelected(it,row));
+                    const inputMini=row.querySelector('.qty-mini');
+                    row.querySelector('.increase-mini').addEventListener('click', e=>{ e.stopPropagation(); inputMini.value=Math.max(1,Number(inputMini.value||0)+1); inputMini.dispatchEvent(new Event('change')); });
+                    row.querySelector('.decrease-mini').addEventListener('click', e=>{ e.stopPropagation(); inputMini.value=Math.max(1,Number(inputMini.value||1)-1); inputMini.dispatchEvent(new Event('change')); });
+                    inputMini.addEventListener('change',()=>{ if(selectedMain && selectedMain.rowEl===row) inputQuantidade.value=Math.max(1,Number(inputMini.value||1)); recomputeModalPrice(); });
+                    wrapperMain.appendChild(row);
+                });
+                listaItens.appendChild(wrapperMain);
+
+                // Render subcategorias com extras + quantidade
+                subcategorias.forEach((sub,sidx)=>{
+                    const subTitle=document.createElement('div'); subTitle.className='func-subcat-title'; subTitle.textContent=sub.tipo||`Subitens ${sidx+1}`;
+                    subitensWrapper.appendChild(subTitle);
+                    const subList=document.createElement('div'); subList.className='d-flex flex-column gap-1 mb-2';
+                    (sub.itens||[]).forEach(subit=>{
+                        const sid='subit-'+(subit.id||Math.random().toString(36).slice(2));
+                        const div=document.createElement('div'); div.className='d-flex align-items-center justify-content-between mb-1';
+                        div.innerHTML=`
+                            <div class="form-check">
+                                <input class="form-check-input func-sub-checkbox" type="checkbox" value="${subit.id}" id="${sid}" data-nome="${subit.nome}" data-valor="${getItemPriceField(subit)}" data-subtipo="${sub.tipo||''}">
+                                <label class="form-check-label" for="${sid}">${subit.nome}</label>
+                            </div>
+                            <div class="func-spinner">
+                                <button type="button" class="btn btn-outline-secondary decrease-sub">−</button>
+                                <input type="number" min="1" value="1" class="form-control form-control-sm qty-sub" style="width:50px;">
+                                <button type="button" class="btn btn-outline-secondary increase-sub">+</button>
+                            </div>
+                        `;
+                        subList.appendChild(div);
+
+                        const checkbox = div.querySelector('.func-sub-checkbox');
+                        const inputSub = div.querySelector('.qty-sub');
+                        div.querySelector('.increase-sub').addEventListener('click',()=>{ inputSub.value=Math.max(1,Number(inputSub.value)+1); recomputeModalPrice(); });
+                        div.querySelector('.decrease-sub').addEventListener('click',()=>{ inputSub.value=Math.max(1,Number(inputSub.value)-1); recomputeModalPrice(); });
+                        inputSub.addEventListener('change',()=>{ if(Number(inputSub.value)<1) inputSub.value=1; recomputeModalPrice(); });
+                        checkbox.addEventListener('change', recomputeModalPrice);
+                    });
+                    subitensWrapper.appendChild(subList);
+                });
+
+                inputQuantidade.value=1;
+                inputQuantidade.addEventListener('change',()=>{ const qty=Math.max(1,Number(inputQuantidade.value||1)); inputQuantidade.value=qty; if(selectedMain && selectedMain.rowEl){ const mini=selectedMain.rowEl.querySelector('.qty-mini'); if(mini) mini.value=qty; } recomputeModalPrice(); });
+                btnIncrease.addEventListener('click',()=>{ inputQuantidade.value=Math.max(1,Number(inputQuantidade.value||1)+1); inputQuantidade.dispatchEvent(new Event('change')); });
+                btnDecrease.addEventListener('click',()=>{ inputQuantidade.value=Math.max(1,Number(inputQuantidade.value||1)-1); inputQuantidade.dispatchEvent(new Event('change')); });
+
+                modalInstance.show();
+            }catch(e){ console.error(e); alert('Erro ao abrir categoria'); }
+        }
+
+        function onMainSelected(it,rowEl){
+            listaItens.querySelectorAll('.func-item-row').forEach(r=>r.classList.remove('selected'));
+            rowEl.classList.add('selected');
+            selectedMain = {...it,rowEl};
+            const mini=rowEl.querySelector('.qty-mini'); inputQuantidade.value=Math.max(1,Number(mini?mini.value:1));
+            recomputeModalPrice();
+        }
+
+        function recomputeModalPrice(){
+            let price=0;
+            if(selectedMain) price += getItemPriceField(selectedMain)*Math.max(1,Number(inputQuantidade.value||1));
+            subitensWrapper.querySelectorAll('.func-sub-checkbox').forEach(cb=>{
+                const parent=cb.closest('div.d-flex');
+                const qty=parent?Number(parent.querySelector('.qty-sub').value||1):1;
+                if(cb.checked) price += Number(cb.dataset.valor||0)*qty;
+            });
+            modalValor.textContent=money(price);
+        }
+
+        btnLancarItem.addEventListener('click',()=>{
+            if(!selectedMain){ alert('Selecione um item principal!'); return; }
+            const qtd = Math.max(1, Number(inputQuantidade.value||1));
+            const extrasChecked = Array.from(subitensWrapper.querySelectorAll('.func-sub-checkbox'))
+                .filter(cb=>cb.checked)
+                .map(cb=>{
+                    const parent=cb.closest('div.d-flex');
+                    const qty=parent?Number(parent.querySelector('.qty-sub').value||1):1;
+                    return { id:cb.value, nome:cb.dataset.nome, valor:Number(cb.dataset.valor||0), qtd:qty, tipo:cb.dataset.subtipo||'' };
+                });
+            const valorUnit = getItemPriceField(selectedMain) + extrasChecked.reduce((a,b)=>a + (b.valor*b.qtd),0);
+            const extrasNames = extrasChecked.map(e=>`${e.nome}${e.qtd>1?` x${e.qtd}`:''}`);
+            const nomeComposto = extrasNames.length ? `${selectedMain.nome} + ${extrasNames.join(', ')}` : selectedMain.nome;
+
+            const composed = {
+                origem_id:selectedMain.id,
+                nome:nomeComposto,
+                qtd:qtd,
+                valor:Number(valorUnit),
+                observacao:(itemObservacao.value||'').trim(),
+                extras:extrasChecked
+            };
+
+            pedidoAtual.push({...composed});
+            itensNovos.push({...composed});
+            selectedMain=null; inputQuantidade.value=1; modalInstance.hide(); atualizarResumo();
+        });
+
+        btnEnviarPedido.addEventListener('click', async ()=>{
+            if(!mesaAtual){ alert('Informe a mesa antes de enviar'); return; }
+            if(!itensNovos.length){ alert('Nenhum item novo para enviar'); return; }
+            try{
+                const res = await fetch('/funcionarios/api/enviar_pedido/',{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+                    body:JSON.stringify({mesa:mesaAtual,itens:itensNovos})
+                });
+                const data = await res.json();
+                if(res.ok && data.ok){
+                    alert('Pedido enviado com sucesso!');
+                    pedidoId = data.pedido_id || pedidoId; itensNovos=[]; pedidoAtual=[];
+                    atualizarResumo(); categoriasContainer.innerHTML=''; listaItens.innerHTML=''; subitensWrapper.innerHTML=''; inputMesa.value=''; mesaAtual=null;
+                }else{ console.error('enviar_pedido retorno',data); alert('Erro ao enviar pedido: '+(data.erro||JSON.stringify(data))); }
+            }catch(e){ console.error(e); alert('Erro ao enviar pedido (ver console).'); }
+        });
+    })();
 </script>
+
 </body>
 </html>
