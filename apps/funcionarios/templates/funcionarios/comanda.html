@@ -121,12 +121,43 @@
     const itemObservacao = document.getElementById('itemObservacao');
     const btnLancarItem = document.getElementById('btnLancarItem');
 
+    // Campo de busca com botão apagar ao lado
+    const buscaWrapper = document.createElement('div');
+    buscaWrapper.className = 'd-flex align-items-center mb-2 gap-2';
+
     const inputBuscaSabor = document.createElement('input');
     inputBuscaSabor.type = 'text';
     inputBuscaSabor.id = 'inputBuscaSabor';
-    inputBuscaSabor.className = 'form-control mb-2';
+    inputBuscaSabor.className = 'form-control';
     inputBuscaSabor.placeholder = 'Buscar sabor...';
-    modalEl.querySelector('.modal-body').insertBefore(inputBuscaSabor, listaItens);
+
+    const btnApagarBusca = document.createElement('button');
+    btnApagarBusca.type = 'button';
+    btnApagarBusca.className = 'btn btn-outline-danger';
+    btnApagarBusca.textContent = 'Apagar';
+    btnApagarBusca.style.whiteSpace = 'nowrap';
+
+    // Apaga o texto e exibe todos os itens novamente
+    btnApagarBusca.addEventListener('click', () => {
+        inputBuscaSabor.value = '';
+        listaItens.querySelectorAll('.func-item-row').forEach(row => row.style.display = '');
+        inputBuscaSabor.focus();
+    });
+
+    buscaWrapper.appendChild(inputBuscaSabor);
+    buscaWrapper.appendChild(btnApagarBusca);
+
+    // Insere acima da lista de itens
+    modalEl.querySelector('.modal-body').insertBefore(buscaWrapper, listaItens);
+
+    // Filtro ao digitar
+    inputBuscaSabor.addEventListener('input', () => {
+        const termo = inputBuscaSabor.value.toLowerCase();
+        listaItens.querySelectorAll('.func-item-row').forEach(row => {
+            const nome = row.querySelector('.fw-bold').textContent.toLowerCase();
+            row.style.display = nome.includes(termo) ? '' : 'none';
+        });
+    });
 
     inputBuscaSabor.addEventListener('input', () => {
         const termo = inputBuscaSabor.value.toLowerCase();
