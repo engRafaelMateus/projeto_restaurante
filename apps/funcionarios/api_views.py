@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Pedido, Mesa
 from apps.pedidos.models import Categoria, Pizza, Sobremesa, Cerveja, Refrigerante, Extra, Borda
 import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
 
@@ -37,12 +39,15 @@ def abrir_mesa(request):
     })
 
 
-# Listar categorias
+# -----------------------------
+# API - Listar categorias
+# -----------------------------
 @login_required
 @user_passes_test(grupo_garcon)
 def listar_categorias(request):
-    categorias = Categoria.objects.filter(ativo=True).values("id", "nome")
-    return JsonResponse({"categorias": list(categorias)})
+    categorias = Categoria.objects.filter(ativo=True)
+    data = [{"id": c.id, "nome": c.nome} for c in categorias]
+    return JsonResponse({"categorias": data})
 
 
 # Listar itens de uma categoria
