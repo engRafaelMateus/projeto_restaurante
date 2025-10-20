@@ -61,6 +61,19 @@ class Borda(Base):
         return self.nome
 
 
+# Gelo e Limão
+class GeloLimao(Base):
+    nome = models.CharField('Nome', max_length=100)
+    valor = models.DecimalField('Valor', max_digits=5, decimal_places=2)
+
+    class Meta:
+        verbose_name = 'Gelo e Limão'
+        verbose_name_plural = 'Gelo e Limão'
+
+    def __str__(self):
+        return self.nome
+
+
 class Pizza(Base):
     nome = models.CharField('Nome', max_length=100)
     descricao = models.CharField('Descrição', max_length=300)
@@ -91,6 +104,8 @@ class Refrigerante(Base):
     descricao = models.CharField('Descrição', max_length=300)
     categoria = models.ForeignKey(Categoria, verbose_name='Categoria', on_delete=models.CASCADE)
     valor = models.DecimalField('Valor', max_digits=5, decimal_places=2)
+    GeloLimao = models.ManyToManyField(GeloLimao, blank=True, related_name='gelolimao')
+
 
     imagem_width = models.PositiveIntegerField(null=True, blank=True)
     imagem_height = models.PositiveIntegerField(null=True, blank=True)

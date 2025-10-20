@@ -2,7 +2,10 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Pedido, Mesa
-from apps.pedidos.models import Categoria, Pizza, Sobremesa, Cerveja, Refrigerante, Extra, Borda
+from apps.pedidos.models import (Categoria, Pizza,
+                                 Sobremesa, Cerveja,
+                                 Refrigerante, Extra,
+                                 Borda, GeloLimao)
 import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -54,45 +57,53 @@ def listar_categorias(request):
 @login_required
 @user_passes_test(grupo_garcon)
 def listar_itens(request, categoria_id):
-    try:
-        categoria = Categoria.objects.get(pk=categoria_id, ativo=True)
-    except Categoria.DoesNotExist:
-        return JsonResponse({"error": "Categoria não encontrada"}, status=404)
-
     itens = []
+    subcategorias = []
 
     # Pizzas
-    pizzas = Pizza.objects.filter(categoria=categoria, ativo=True)
-    for p in pizzas:
-        itens.append({"id": p.id, "nome": p.nome, "preco": float(p.valor)})
+    for p in Pizza.objects.filter(categoria_id=categoria_id, ativo=True):
+        itens.append({"id": p.id, "nome": p.nome, "valor": float(p.valor)})
 
     # Sobremesas
-    sobremesas = Sobremesa.objects.filter(categoria=categoria, ativo=True)
-    for s in sobremesas:
-        itens.append({"id": s.id, "nome": s.nome, "preco": float(s.valor)})
+    for s in Sobremesa.objects.filter(categoria_id=categoria_id, ativo=True):
+        itens.append({"id": s.id, "nome": s.nome, "valor": float(s.valor)})
 
     # Cervejas
-    cervejas = Cerveja.objects.filter(categoria=categoria, ativo=True)
-    for c in cervejas:
-        itens.append({"id": c.id, "nome": c.nome, "preco": float(c.valor)})
+    for c in Cerveja.objects.filter(categoria_id=categoria_id, ativo=True):
+        itens.append({"id": c.id, "nome": c.nome, "valor": float(c.valor)})
 
     # Refrigerantes
-    refrigerantes = Refrigerante.objects.filter(categoria=categoria, ativo=True)
-    for r in refrigerantes:
-        itens.append({"id": r.id, "nome": r.nome, "preco": float(r.valor)})
+    for r in Refrigerante.objects.filter(categoria_id=categoria_id, ativo=True):
+        itens.append({"id": r.id, "nome": r.nome, "valor": float(r.valor)})
 
-    # Extras (opcional)
-    extras = Extra.objects.filter(categorias=categoria, ativo=True)
-    for e in extras:
-        itens.append({"id": e.id, "nome": e.nome, "preco": float(e.valor)})
+    # Extras (qualquer categoria que tenha extras)
+    extras = Extra.objects.filter(categorias__id=categoria_id, ativo=True)
+    if extras.exists():
+        subcategorias.append({
+            "tipo": "Extra",
+            "itens": [{"id": e.id, "nome": e.nome, "valor": float(e.valor)} for e in extras]
+        })
 
-    # Bordas – só se quiser para essa categoria específica
-    if categoria.nome.lower() == "bordas":
+    # Bordas – só para pizzas
+    if Pizza.objects.filter(categoria_id=categoria_id, ativo=True).exists():
         bordas = Borda.objects.filter(ativo=True)
-        for b in bordas:
-            itens.append({"id": b.id, "nome": b.nome, "preco": float(b.valor)})
+        if bordas.exists():
+            subcategorias.append({
+                "tipo": "Borda",
+                "itens": [{"id": b.id, "nome": b.nome, "valor": float(b.valor)} for b in bordas]
+            })
 
-    return JsonResponse({"itens": itens})
+    # Gelo e Limão – só para refrigerantes
+    categoria = Categoria.objects.get(pk=categoria_id)
+    if categoria.nome.lower() == "refrigerantes":
+        gelos = GeloLimao.objects.filter(ativo=True)
+        if gelos.exists():
+            subcategorias.append({
+                "tipo": "GeloLimao",
+                "itens": [{"id": g.id, "nome": g.nome, "valor": float(g.valor)} for g in gelos]
+            })
+
+    return JsonResponse({"itens": itens, "subcategorias": subcategorias})
 
 
 # Adicionar item ao pedido

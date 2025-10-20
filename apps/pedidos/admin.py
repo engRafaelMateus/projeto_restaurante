@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import Categoria, Extra, Pizza, Borda, Refrigerante, Cerveja, Sobremesa
+from .models import (Categoria, Extra, Pizza,
+                     Borda, Refrigerante, Cerveja,
+                     Sobremesa, GeloLimao)
 
 
 # ----------------------------
@@ -38,6 +40,16 @@ class PizzaAdmin(admin.ModelAdmin):
 # ----------------------------
 @admin.register(Borda)
 class BordaAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'valor', 'ativo', 'criado', 'modificado')
+    search_fields = ('nome',)
+    list_filter = ('ativo',)
+    ordering = ('nome',)
+
+# ----------------------------
+# Gelo e Limão
+# ----------------------------
+@admin.register(GeloLimao)
+class GeloLimaoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'valor', 'ativo', 'criado', 'modificado')
     search_fields = ('nome',)
     list_filter = ('ativo',)
