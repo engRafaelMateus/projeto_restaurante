@@ -92,229 +92,255 @@
 
 <script>
     (() => {
-        let mesaAtual = null;
-        let pedidoAtual = [];
-        let pedidoId = null;
-        let itensNovos = [];
-        let selectedMain = null;
-        let modalInstance = null;
+    let mesaAtual = null;
+    let pedidoAtual = [];
+    let pedidoId = null;
+    let itensNovos = [];
+    let selectedMain = null;
+    let modalInstance = null;
 
-        // --- Novos estados para pizza meia a meia ---
-        let pizzaHalf = null;  // null / 'first' / 'second'
-        let firstHalf = null;  // guarda o primeiro sabor selecionado
+    let pizzaHalf = null;  // null / 'first' / 'second'
+    let firstHalf = null;
 
-        const inputMesa = document.getElementById('inputMesa');
-        const btnAbrirMesa = document.getElementById('btnAbrirMesa');
-        const btnLimparMesa = document.getElementById('btnLimparMesa');
-        const categoriasContainer = document.getElementById('func-categorias');
-        const pedidoDiv = document.getElementById('pedido-resumo');
-        const btnEnviarPedido = document.getElementById('btnEnviarPedido');
+    const inputMesa = document.getElementById('inputMesa');
+    const btnAbrirMesa = document.getElementById('btnAbrirMesa');
+    const btnLimparMesa = document.getElementById('btnLimparMesa');
+    const categoriasContainer = document.getElementById('func-categorias');
+    const pedidoDiv = document.getElementById('pedido-resumo');
+    const btnEnviarPedido = document.getElementById('btnEnviarPedido');
 
-        const modalEl = document.getElementById('modalItens');
-        modalInstance = new bootstrap.Modal(modalEl);
-        const listaItens = document.getElementById('listaItens');
-        const subitensWrapper = document.getElementById('subitens-wrapper');
-        const inputQuantidade = document.getElementById('inputQuantidade');
-        const btnIncrease = modalEl.querySelector('.btn-increase');
-        const btnDecrease = modalEl.querySelector('.btn-decrease');
-        const modalValor = document.getElementById('modal-valor');
-        const itemObservacao = document.getElementById('itemObservacao');
-        const btnLancarItem = document.getElementById('btnLancarItem');
+    const modalEl = document.getElementById('modalItens');
+    modalInstance = new bootstrap.Modal(modalEl);
+    const listaItens = document.getElementById('listaItens');
+    const subitensWrapper = document.getElementById('subitens-wrapper');
+    const inputQuantidade = document.getElementById('inputQuantidade');
+    const btnIncrease = modalEl.querySelector('.btn-increase');
+    const btnDecrease = modalEl.querySelector('.btn-decrease');
+    const modalValor = document.getElementById('modal-valor');
+    const itemObservacao = document.getElementById('itemObservacao');
+    const btnLancarItem = document.getElementById('btnLancarItem');
 
-        // --- Input para busca de sabores ---
-        const inputBuscaSabor = document.createElement('input');
-        inputBuscaSabor.type = 'text';
-        inputBuscaSabor.id = 'inputBuscaSabor';
-        inputBuscaSabor.className = 'form-control mb-2';
-        inputBuscaSabor.placeholder = 'Buscar sabor...';
-        modalEl.querySelector('.modal-body').insertBefore(inputBuscaSabor, listaItens);
+    const inputBuscaSabor = document.createElement('input');
+    inputBuscaSabor.type = 'text';
+    inputBuscaSabor.id = 'inputBuscaSabor';
+    inputBuscaSabor.className = 'form-control mb-2';
+    inputBuscaSabor.placeholder = 'Buscar sabor...';
+    modalEl.querySelector('.modal-body').insertBefore(inputBuscaSabor, listaItens);
 
-        inputBuscaSabor.addEventListener('input', () => {
-            const termo = inputBuscaSabor.value.toLowerCase();
-            listaItens.querySelectorAll('.func-item-row').forEach(row => {
-                const nome = row.querySelector('.fw-bold').textContent.toLowerCase();
-                row.style.display = nome.includes(termo) ? '' : 'none';
-            });
+    inputBuscaSabor.addEventListener('input', () => {
+        const termo = inputBuscaSabor.value.toLowerCase();
+        listaItens.querySelectorAll('.func-item-row').forEach(row => {
+            const nome = row.querySelector('.fw-bold').textContent.toLowerCase();
+            row.style.display = nome.includes(termo) ? '' : 'none';
         });
+    });
 
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let cookie of cookies) {
-                    cookie = cookie.trim();
-                    if (cookie.startsWith(name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
+    function money(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
+    function getItemPriceField(item) { return (item.valor !== undefined) ? Number(item.valor) : ((item.preco !== undefined) ? Number(item.preco) : 0); }
 
-        function money(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
-        function getItemPriceField(item) { return (item.valor !== undefined) ? Number(item.valor) : ((item.preco !== undefined) ? Number(item.preco) : 0); }
-
-        function atualizarResumo() {
-            pedidoDiv.innerHTML = '';
-            if (!pedidoAtual.length) { pedidoDiv.innerHTML = '<p>Pedido vazio</p>'; btnEnviarPedido.disabled = true; return; }
-            pedidoAtual.forEach(it => {
-                const row = document.createElement('div');
-                const qtd = it.qtd || 1;
-                const valorUnit = Number(it.valor || it.preco || 0);
-                row.textContent = `${it.nome} x${qtd} - ${money(valorUnit * qtd)}`;
-                pedidoDiv.appendChild(row);
-            });
-            const total = pedidoAtual.reduce((acc, it) => acc + (Number(it.valor || it.preco || 0) * (it.qtd || 1)), 0);
-            const totalDiv = document.createElement('div'); totalDiv.className = 'fw-bold mt-2'; totalDiv.textContent = `Total: ${money(total)}`;
-            pedidoDiv.appendChild(totalDiv);
-            btnEnviarPedido.disabled = itensNovos.length === 0;
-        }
-
-        btnLimparMesa.addEventListener('click', () => {
-            inputMesa.value = ''; mesaAtual = null; pedidoAtual = []; itensNovos = []; pedidoId = null; selectedMain = null; pizzaHalf = null; firstHalf = null;
-            atualizarResumo(); categoriasContainer.innerHTML = ''; listaItens.innerHTML = ''; subitensWrapper.innerHTML = '';
+    function atualizarResumo() {
+        pedidoDiv.innerHTML = '';
+        if (!pedidoAtual.length) { pedidoDiv.innerHTML = '<p>Pedido vazio</p>'; btnEnviarPedido.disabled = true; return; }
+        pedidoAtual.forEach(it => {
+            const row = document.createElement('div');
+            const qtd = it.qtd || 1;
+            const valorUnit = Number(it.valor || it.preco || 0);
+            row.textContent = `${it.nome} x${qtd} - ${money(valorUnit * qtd)}`;
+            pedidoDiv.appendChild(row);
         });
+        const total = pedidoAtual.reduce((acc, it) => acc + (Number(it.valor || it.preco || 0) * (it.qtd || 1)), 0);
+        const totalDiv = document.createElement('div'); totalDiv.className = 'fw-bold mt-2'; totalDiv.textContent = `Total: ${money(total)}`;
+        pedidoDiv.appendChild(totalDiv);
+        btnEnviarPedido.disabled = itensNovos.length === 0;
+    }
 
-        btnAbrirMesa.addEventListener('click', async () => {
-            const numero = String(inputMesa.value || '').trim();
-            if (!numero) { alert('Digite o número da mesa!'); return; }
-            mesaAtual = numero;
+    btnLimparMesa.addEventListener('click', () => {
+        inputMesa.value = ''; mesaAtual = null; pedidoAtual = []; itensNovos = []; pedidoId = null; selectedMain = null; pizzaHalf = null; firstHalf = null;
+        atualizarResumo(); categoriasContainer.innerHTML = ''; listaItens.innerHTML = ''; subitensWrapper.innerHTML = '';
+    });
 
-            try {
-                const res = await fetch(`/funcionarios/api/pedido_aberto/${encodeURIComponent(mesaAtual)}/`);
-                if (res.ok) {
-                    const data = await res.json();
-                    pedidoId = data?.pedido_id || null;
-                    pedidoAtual = data?.itens || [];
-                } else { pedidoAtual = []; pedidoId = null; }
-            } catch (e) { console.warn('pedido_aberto erro', e); pedidoAtual = []; pedidoId = null; }
-            itensNovos = [];
-            atualizarResumo();
+    btnAbrirMesa.addEventListener('click', async () => {
+        const numero = String(inputMesa.value || '').trim();
+        if (!numero) { alert('Digite o número da mesa!'); return; }
+        mesaAtual = numero;
 
-            try {
-                const catRes = await fetch('/funcionarios/api/listar_categorias/');
-                if (!catRes.ok) throw new Error('Erro listar categorias');
-                const cdata = await catRes.json();
-                ativarCategorias(cdata.categorias || []);
-            } catch (e) { console.error(e); alert('Erro ao carregar categorias'); }
-        });
-
-        function ativarCategorias(categorias) {
-            categoriasContainer.innerHTML = '';
-            categorias.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.type = 'button'; btn.className = 'btn btn-primary'; btn.textContent = cat.nome;
-                btn.addEventListener('click', () => abrirCategoria(cat.id, cat.nome));
-                categoriasContainer.appendChild(btn);
-            });
-        }
-
-        async function abrirCategoria(categoriaId, nome) {
-            try {
-                const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
-                if (!res.ok) { alert('Erro ao buscar itens da categoria'); return; }
+        try {
+            const res = await fetch(`/funcionarios/api/pedido_aberto/${encodeURIComponent(mesaAtual)}/`);
+            if (res.ok) {
                 const data = await res.json();
-                const itensPrincipais = Array.isArray(data.itens) ? data.itens : data;
-                const subcategorias = data.subcategorias || [];
+                pedidoId = data?.pedido_id || null;
+                pedidoAtual = data?.itens || [];
+            } else { pedidoAtual = []; pedidoId = null; }
+        } catch (e) { console.warn('pedido_aberto erro', e); pedidoAtual = []; pedidoId = null; }
+        itensNovos = [];
+        atualizarResumo();
 
-                listaItens.innerHTML = ''; subitensWrapper.innerHTML = ''; selectedMain = null; inputQuantidade.value = 1; itemObservacao.value = ''; modalValor.textContent = money(0);
-                inputBuscaSabor.value = '';
+        try {
+            const catRes = await fetch('/funcionarios/api/listar_categorias/');
+            if (!catRes.ok) throw new Error('Erro listar categorias');
+            const cdata = await catRes.json();
+            ativarCategorias(cdata.categorias || []);
+        } catch (e) { console.error(e); alert('Erro ao carregar categorias'); }
+    });
 
-                // Só ativa meia a meia para categoria "Pizza"
-                pizzaHalf = (nome.toLowerCase() === 'pizza') ? 'first' : null;
-                firstHalf = null;
-                atualizarTituloModal();
+    function ativarCategorias(categorias) {
+        categoriasContainer.innerHTML = '';
+        categorias.forEach(cat => {
+            const btn = document.createElement('button');
+            btn.type = 'button'; btn.className = 'btn btn-primary'; btn.textContent = cat.nome;
+            btn.addEventListener('click', () => abrirCategoria(cat.id, cat.nome));
+            categoriasContainer.appendChild(btn);
+        });
+    }
 
-                itensPrincipais.forEach((it, idx) => {
-                    const row = document.createElement('label'); row.className = 'func-item-row'; row.setAttribute('data-id', it.id);
-                    row.innerHTML = `
-                        <div class="d-flex align-items-center gap-3">
-                            <input type="radio" name="func-main-item" class="form-check-input me-2 func-main-radio" data-idx="${idx}">
-                            <div><div class="fw-bold">${it.nome}</div><div class="text-muted small">${money(getItemPriceField(it))}</div></div>
-                        </div>
-                        <div class="func-spinner">
-                            <button type="button" class="btn btn-outline-secondary decrease-mini">−</button>
-                            <input type="number" min="1" value="1" class="form-control form-control-sm qty-mini" style="width:70px">
-                            <button type="button" class="btn btn-outline-secondary increase-mini">+</button>
-                        </div>
-                    `;
+    async function abrirCategoria(categoriaId, nome) {
+        try {
+            const res = await fetch(`/funcionarios/api/listar_itens/${categoriaId}/`);
+            if (!res.ok) { alert('Erro ao buscar itens da categoria'); return; }
+            const data = await res.json();
+            const itensPrincipais = Array.isArray(data.itens) ? data.itens : data;
+            const subcategorias = data.subcategorias || [];
 
-                    row.addEventListener('click', (ev) => {
-                        const target = ev.target;
-                        if (target.classList.contains('increase-mini') || target.classList.contains('decrease-mini') || target.classList.contains('qty-mini')) return;
+            listaItens.innerHTML = ''; subitensWrapper.innerHTML = ''; selectedMain = null; inputQuantidade.value = 1; itemObservacao.value = ''; modalValor.textContent = money(0);
+            inputBuscaSabor.value = '';
 
-                        const radio = row.querySelector('.func-main-radio'); radio.checked = true;
+            pizzaHalf = (nome.toLowerCase() === 'pizza') ? 'first' : null;
+            firstHalf = null;
+            atualizarTituloModal();
 
-                        // --- Fluxo pizza meia a meia ---
-                        if (pizzaHalf) {
-                            if (pizzaHalf === 'first') {
-                                firstHalf = it;
-                                pizzaHalf = 'second';
-                                atualizarTituloModal();
-                            } else if (pizzaHalf === 'second') {
-                                const pizzaComposta = {
-                                    origem_id: null,
-                                    nome: `${firstHalf.nome} / ${it.nome}`,
-                                    qtd: Number(inputQuantidade.value || 1),
-                                    valor: (getItemPriceField(firstHalf) + getItemPriceField(it)) / 2,
-                                    observacao: itemObservacao.value.trim(),
-                                    sabores: [firstHalf, it]
-                                };
-                                pedidoAtual.push(pizzaComposta);
-                                itensNovos.push(pizzaComposta);
-                                modalInstance.hide();
-                                pizzaHalf = null; firstHalf = null;
-                                atualizarResumo();
-                            }
-                            return;
+            // Lock interno para evitar cliques duplicados
+            let clickLock = false;
+
+            itensPrincipais.forEach((it, idx) => {
+                const row = document.createElement('label');
+                row.className = 'func-item-row';
+                row.setAttribute('data-id', it.id);
+                row.innerHTML = `
+                    <div class="d-flex align-items-center gap-3">
+                        <input type="radio" name="func-main-item" class="form-check-input me-2 func-main-radio" data-idx="${idx}">
+                        <div><div class="fw-bold">${it.nome}</div><div class="text-muted small">${money(getItemPriceField(it))}</div></div>
+                    </div>
+                    <div class="func-spinner">
+                        <button type="button" class="btn btn-outline-secondary decrease-mini">−</button>
+                        <input type="number" min="1" value="1" class="form-control form-control-sm qty-mini" style="width:70px">
+                        <button type="button" class="btn btn-outline-secondary increase-mini">+</button>
+                    </div>
+                `;
+
+                row.addEventListener('click', (ev) => {
+                    if (clickLock) return;
+                    clickLock = true;
+                    setTimeout(() => clickLock = false, 50); // desbloqueia após 50ms
+
+                    const target = ev.target;
+                    if (target.classList.contains('increase-mini') || target.classList.contains('decrease-mini') || target.classList.contains('qty-mini')) return;
+
+                    const radio = row.querySelector('.func-main-radio');
+                    radio.checked = true;
+
+                    if (pizzaHalf) {
+                        if (pizzaHalf === 'first') {
+                            firstHalf = it;
+                            pizzaHalf = 'second';
+                            atualizarTituloModal();
+                        } else if (pizzaHalf === 'second') {
+                            selectedMain = {
+                                id: null,
+                                nome: `${firstHalf.nome} / ${it.nome}`,
+                                sabores: [firstHalf, it],
+                                valor: (getItemPriceField(firstHalf) + getItemPriceField(it)) / 2
+                            };
+                            pizzaHalf = null;
+                            firstHalf = null;
+                            atualizarTituloModal();
+                            modalValor.textContent = money(selectedMain.valor * Number(inputQuantidade.value || 1));
                         }
-                        // --- Fluxo normal ---
-                        onMainSelected(it, row);
-                    });
+                        return;
+                    }
 
-                    const inputMini = row.querySelector('.qty-mini');
-                    row.querySelector('.increase-mini').addEventListener('click', e => { e.stopPropagation(); inputMini.value = Number(inputMini.value) + 1; });
-                    row.querySelector('.decrease-mini').addEventListener('click', e => { e.stopPropagation(); if (inputMini.value > 1) inputMini.value = Number(inputMini.value) - 1; });
-
-                    listaItens.appendChild(row);
+                    onMainSelected(it, row);
                 });
 
-                modalInstance.show();
-            } catch (e) { console.error(e); alert('Erro ao abrir categoria'); }
+                const inputMini = row.querySelector('.qty-mini');
+                row.querySelector('.increase-mini').addEventListener('click', e => { e.stopPropagation(); inputMini.value = Number(inputMini.value) + 1; });
+                row.querySelector('.decrease-mini').addEventListener('click', e => { e.stopPropagation(); if (inputMini.value > 1) inputMini.value = Number(inputMini.value) - 1; });
+
+                listaItens.appendChild(row);
+            });
+
+            // Subcategorias
+            if (subcategorias.length) {
+                const subTitle = document.createElement('div');
+                subTitle.className = 'fw-bold mb-2';
+                subTitle.textContent = 'Subitens / Adicionais';
+                subitensWrapper.appendChild(subTitle);
+
+                subcategorias.forEach(sub => {
+                    const subRow = document.createElement('div');
+                    subRow.className = 'form-check mb-1';
+                    subRow.innerHTML = `
+                        <input class="form-check-input" type="checkbox" value="${sub.id}" id="sub-${sub.id}" data-valor="${sub.valor || 0}">
+                        <label class="form-check-label" for="sub-${sub.id}">
+                            ${sub.nome} (+${money(sub.valor || 0)})
+                        </label>
+                    `;
+                    subitensWrapper.appendChild(subRow);
+                });
+            }
+
+            modalInstance.show();
+
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao abrir categoria');
         }
+    }
 
-        function atualizarTituloModal() {
-            const titulo = modalEl.querySelector('.modal-title');
-            if (pizzaHalf === 'first') titulo.textContent = 'Primeira metade da Pizza';
-            else if (pizzaHalf === 'second') titulo.textContent = 'Segunda metade da Pizza';
-            else titulo.textContent = 'Selecionar Item';
-        }
+    function atualizarTituloModal() {
+        const titulo = modalEl.querySelector('.modal-title');
+        if (pizzaHalf === 'first') titulo.textContent = 'Primeira metade da Pizza';
+        else if (pizzaHalf === 'second') titulo.textContent = 'Segunda metade da Pizza';
+        else titulo.textContent = 'Selecionar Item';
+    }
 
-        function onMainSelected(item, row) {
-            selectedMain = item;
-            modalValor.textContent = money(getItemPriceField(item) * Number(inputQuantidade.value || 1));
-        }
+    function onMainSelected(item, row) {
+        selectedMain = item;
+        modalValor.textContent = money(getItemPriceField(item) * Number(inputQuantidade.value || 1));
+    }
 
-        btnIncrease.addEventListener('click', () => { inputQuantidade.value = Number(inputQuantidade.value || 1) + 1; if (selectedMain) onMainSelected(selectedMain); });
-        btnDecrease.addEventListener('click', () => { if (inputQuantidade.value > 1) inputQuantidade.value = Number(inputQuantidade.value) - 1; if (selectedMain) onMainSelected(selectedMain); });
+    btnIncrease.addEventListener('click', () => { inputQuantidade.value = Number(inputQuantidade.value || 1) + 1; if (selectedMain) onMainSelected(selectedMain); });
+    btnDecrease.addEventListener('click', () => { if (inputQuantidade.value > 1) inputQuantidade.value = Number(inputQuantidade.value) - 1; if (selectedMain) onMainSelected(selectedMain); });
 
-        btnLancarItem.addEventListener('click', () => {
-            if (!selectedMain) { alert('Selecione um item'); return; }
-            const novoItem = {
-                origem_id: selectedMain.id,
-                nome: selectedMain.nome,
-                qtd: Number(inputQuantidade.value || 1),
-                valor: getItemPriceField(selectedMain),
-                observacao: itemObservacao.value.trim()
-            };
-            pedidoAtual.push(novoItem);
-            itensNovos.push(novoItem);
-            modalInstance.hide();
-            atualizarResumo();
-        });
+    btnLancarItem.addEventListener('click', () => {
+        if (!selectedMain) { alert('Selecione um item'); return; }
 
-    })();
+        const selecionados = Array.from(subitensWrapper.querySelectorAll('input[type="checkbox"]:checked'))
+            .map(el => ({
+                id: el.value,
+                nome: el.nextElementSibling.textContent,
+                valor: Number(el.dataset.valor) || 0
+            }));
+
+        const novoItem = {
+            origem_id: selectedMain.id,
+            nome: selectedMain.nome,
+            qtd: Number(inputQuantidade.value || 1),
+            valor: (selectedMain.valor || getItemPriceField(selectedMain)) + selecionados.reduce((a,b)=>a+b.valor,0),
+            observacao: itemObservacao.value.trim(),
+            adicionais: selecionados
+        };
+
+        pedidoAtual.push(novoItem);
+        itensNovos.push(novoItem);
+        modalInstance.hide();
+        selectedMain = null;
+        atualizarResumo();
+    });
+
+})();
+
 </script>
+
+
 </body>
 </html>
