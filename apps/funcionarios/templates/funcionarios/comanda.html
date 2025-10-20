@@ -257,7 +257,12 @@
             const itensPrincipais = Array.isArray(data.itens) ? data.itens : data;
             const subcategorias = data.subcategorias || [];
 
-            listaItens.innerHTML = ''; subitensWrapper.innerHTML = ''; selectedMain = null; inputQuantidade.value = 1; itemObservacao.value = ''; modalValor.textContent = money(0);
+            listaItens.innerHTML = '';
+            subitensWrapper.innerHTML = '';
+            selectedMain = null;
+            inputQuantidade.value = 1;
+            itemObservacao.value = '';
+            modalValor.textContent = money(0);
             inputBuscaSabor.value = '';
 
             pizzaHalf = (nome.toLowerCase() === 'pizza') ? 'first' : null;
@@ -271,25 +276,22 @@
                 const row = document.createElement('label');
                 row.className = 'func-item-row';
                 row.setAttribute('data-id', it.id);
+
+                // 🔥 Removido o spinner daqui
                 row.innerHTML = `
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="fw-bold">${it.nome}</div>
+                            <div class="text-muted small">${money(getItemPriceField(it))}</div>
+                        </div>
                         <input type="radio" name="func-main-item" class="form-check-input me-2 func-main-radio" data-idx="${idx}">
-                        <div><div class="fw-bold">${it.nome}</div><div class="text-muted small">${money(getItemPriceField(it))}</div></div>
-                    </div>
-                    <div class="func-spinner">
-                        <button type="button" class="btn btn-outline-secondary decrease-mini">−</button>
-                        <input type="number" min="1" value="1" class="form-control form-control-sm qty-mini" style="width:70px">
-                        <button type="button" class="btn btn-outline-secondary increase-mini">+</button>
                     </div>
                 `;
 
                 row.addEventListener('click', (ev) => {
                     if (clickLock) return;
                     clickLock = true;
-                    setTimeout(() => clickLock = false, 50); // desbloqueia após 50ms
-
-                    const target = ev.target;
-                    if (target.classList.contains('increase-mini') || target.classList.contains('decrease-mini') || target.classList.contains('qty-mini')) return;
+                    setTimeout(() => clickLock = false, 50);
 
                     const radio = row.querySelector('.func-main-radio');
                     radio.checked = true;
@@ -317,10 +319,6 @@
                     onMainSelected(it, row);
                 });
 
-                const inputMini = row.querySelector('.qty-mini');
-                row.querySelector('.increase-mini').addEventListener('click', e => { e.stopPropagation(); inputMini.value = Number(inputMini.value) + 1; });
-                row.querySelector('.decrease-mini').addEventListener('click', e => { e.stopPropagation(); if (inputMini.value > 1) inputMini.value = Number(inputMini.value) - 1; });
-
                 listaItens.appendChild(row);
             });
 
@@ -332,7 +330,7 @@
                 subitensWrapper.appendChild(subTitle);
 
                 subcategorias.forEach(sub => {
-                    sub.itens.forEach(item => {  // Itera cada item dentro da subcategoria
+                    sub.itens.forEach(item => {
                         const subRow = document.createElement('div');
                         subRow.className = 'form-check mb-1';
                         subRow.innerHTML = `
@@ -346,34 +344,28 @@
                 });
             }
 
-            // Função que recalcula o valor do modal
             function atualizarModalValor() {
                 const qtd = Number(inputQuantidade.value || 1);
                 let valorBase = selectedMain ? (selectedMain.valor || getItemPriceField(selectedMain)) : 0;
-
                 const adicionais = Array.from(subitensWrapper.querySelectorAll('input[type="checkbox"]:checked'))
                     .map(el => Number(el.dataset.valor) || 0);
-
-                const total = (valorBase + adicionais.reduce((a,b) => a+b,0)) * qtd;
+                const total = (valorBase + adicionais.reduce((a,b)=>a+b,0)) * qtd;
                 modalValor.textContent = money(total);
             }
 
-            // Adiciona listeners aos checkboxes de subitens
             subitensWrapper.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 cb.addEventListener('change', atualizarModalValor);
             });
 
-            // Atualiza valor quando muda a quantidade
             inputQuantidade.addEventListener('input', atualizarModalValor);
 
-
             modalInstance.show();
-
         } catch (e) {
             console.error(e);
             alert('Erro ao abrir categoria');
         }
     }
+
 
     function atualizarTituloModal() {
         const titulo = modalEl.querySelector('.modal-title');

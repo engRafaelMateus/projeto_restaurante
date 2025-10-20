@@ -1928,3 +1928,88 @@ a:focus {
         }
 
 
+/* ==== ESTILO GERAL DOS ITENS ==== */
+    .func-item-row {
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        padding: 10px 14px;
+        background-color: #f9f9f9;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        display: block;
+    }
+
+    .func-item-row:hover {
+        background-color: #f2f2f2;
+        border-color: #bbb;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+        cursor: pointer;
+    }
+
+    /* Espaçamento entre os itens */
+    #listaItens .func-item-row + .func-item-row {
+        margin-top: 6px;
+    }
+
+    /* ====== RADIO BUTTON AJUSTADO ====== */
+    .func-item-row .d-flex {
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Alinha o radio mais bonito e espaçado */
+    .func-main-radio {
+        width: 20px;
+        height: 20px;
+        accent-color: #198754; /* verde Bootstrap */
+        margin-left: 15px;
+        flex-shrink: 0;
+    }
+
+    /* Nome e preço do item */
+    .func-item-row .fw-bold {
+        font-size: 1rem;
+        color: #333;
+    }
+
+    .func-item-row .text-muted {
+        font-size: 0.9rem;
+        color: #666 !important;
+    }
+
+    /* ====== SUBITENS ====== */
+    #subitens-wrapper .form-check {
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 6px 10px;
+        margin-bottom: 5px;
+        transition: all 0.2s ease;
+    }
+
+    #subitens-wrapper .form-check:hover {
+        background: #f0f0f0;
+    }
+
+    #subitens-wrapper .form-check-input {
+        accent-color: #0d6efd;
+        margin-right: 8px;
+        width: 18px;
+        height: 18px;
+    }
+
+    #subitens-wrapper label {
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    /* ====== OUTROS ====== */
+    #global-spinner {
+        display: flex;
+    }
+
+    .func-spinner {
+        display: none;
+    }
+
+
