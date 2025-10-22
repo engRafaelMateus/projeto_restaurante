@@ -308,34 +308,6 @@
                     });
                 }
 
-                // Spinner quantidade
-                inputQuantidade.value = 1;
-
-                // Input manual
-                inputQuantidade.addEventListener('input', () => {
-                    let val = parseInt(inputQuantidade.value, 10);
-                    if (isNaN(val) || val < 1) val = 1;
-                    inputQuantidade.value = val;
-                    atualizarModalValor();
-                });
-
-                // Botão +
-                btnIncrease.addEventListener('click', () => {
-                    let val = parseInt(inputQuantidade.value, 10) || 1;
-                    val += 1; // sempre soma 1, independente dos extras
-                    inputQuantidade.value = val;
-                    atualizarModalValor();
-                });
-
-                // Botão -
-                btnDecrease.addEventListener('click', () => {
-                    let val = parseInt(inputQuantidade.value, 10) || 1;
-                    if (val > 1) val -= 1; // sempre subtrai 1
-                    inputQuantidade.value = val;
-                    atualizarModalValor();
-                });
-
-
                 function atualizarModalValor(){
                     const qtd = parseInt(inputQuantidade.value, 10) || 1;
 
@@ -358,6 +330,34 @@
                 modalInstance.show();
             }catch(e){ console.error(e); alert('Erro ao abrir categoria'); }
         }
+
+        // Spinner quantidade
+        inputQuantidade.value = 1;
+
+        // Input manual
+        inputQuantidade.addEventListener('input', () => {
+            let val = parseInt(inputQuantidade.value, 10);
+            if (isNaN(val) || val < 1) val = 1;
+            inputQuantidade.value = val;
+            atualizarModalValor();
+        });
+
+        // Botão +
+        btnIncrease.addEventListener('click', () => {
+            let val = parseInt(inputQuantidade.value, 10) || 1;
+            val += 1; // sempre soma 1, independente dos extras
+            inputQuantidade.value = val;
+            atualizarModalValor();
+        });
+
+        // Botão -
+        btnDecrease.addEventListener('click', () => {
+            let val = parseInt(inputQuantidade.value, 10) || 1;
+            if (val > 1) val -= 1; // sempre subtrai 1
+            inputQuantidade.value = val;
+            atualizarModalValor();
+        });
+
 
         function atualizarTituloModal(){
             const titulo=modalEl.querySelector('.modal-title');
@@ -390,6 +390,32 @@
             selectedMain=null;
             atualizarResumo();
         });
+
+
+        // Resetar variáveis sempre que o modal fechar
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            // Resetar quantidade para 1
+            inputQuantidade.value = 1;
+
+            // Resetar o valor exibido
+            modalValor.textContent = 'R$ 0,00';
+
+            // Limpar observação
+            itemObservacao.value = '';
+
+            // Desmarcar todos os checkboxes de adicionais
+            subitensWrapper.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+            // Limpar variáveis de controle
+            selectedMain = null;
+            pizzaHalf = null;
+            firstHalf = null;
+
+            // Garantir que o campo de busca seja limpo
+            const inputBusca = document.getElementById('inputBuscaSabor');
+            if (inputBusca) inputBusca.value = '';
+        });
+
 
     })();
 </script>

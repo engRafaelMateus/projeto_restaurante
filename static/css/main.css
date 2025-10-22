@@ -2012,4 +2012,10 @@ a:focus {
         display: none;
     }
 
+.btn-outline-danger:hover {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+
 
