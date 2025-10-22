@@ -6,6 +6,8 @@
     <title>Comanda - Garçom</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
     <link href="{% static 'css/main.css' %}" type="text/css" rel="stylesheet"/>
 </head>
 <body>
@@ -99,7 +101,6 @@
         let itensNovos = [];
         let selectedMain = null;
         let modalInstance = null;
-
         let pizzaHalf = null;
         let firstHalf = null;
 
@@ -109,7 +110,6 @@
         const categoriasContainer = document.getElementById('func-categorias');
         const pedidoDiv = document.getElementById('pedido-resumo');
         const btnEnviarPedido = document.getElementById('btnEnviarPedido');
-
         const modalEl = document.getElementById('modalItens');
         modalInstance = new bootstrap.Modal(modalEl);
         const listaItens = document.getElementById('listaItens');
@@ -121,7 +121,7 @@
         const itemObservacao = document.getElementById('itemObservacao');
         const btnLancarItem = document.getElementById('btnLancarItem');
 
-        // Campo de busca
+        // Campo de busca no modal
         const buscaWrapper = document.createElement('div');
         buscaWrapper.className = 'd-flex align-items-center mb-2 gap-2';
         const inputBuscaSabor = document.createElement('input');
@@ -142,7 +142,6 @@
         buscaWrapper.appendChild(inputBuscaSabor);
         buscaWrapper.appendChild(btnApagarBusca);
         modalEl.querySelector('.modal-body').insertBefore(buscaWrapper, listaItens);
-
         inputBuscaSabor.addEventListener('input', () => {
             const termo = inputBuscaSabor.value.toLowerCase();
             listaItens.querySelectorAll('.func-item-row').forEach(row => {
@@ -154,6 +153,7 @@
         function money(v){ return 'R$ '+Number(v).toFixed(2).replace('.', ','); }
         function getItemPriceField(item){ return (item.valor!==undefined)?Number(item.valor):((item.preco!==undefined)?Number(item.preco):0); }
 
+        // ✅ ATUALIZAR RESUMO COM LIXEIRA
         function atualizarResumo() {
             pedidoDiv.innerHTML = '';
             if (!pedidoAtual.length) {
@@ -161,18 +161,38 @@
                 btnEnviarPedido.disabled = true;
                 return;
             }
-            pedidoAtual.forEach(it => {
+            pedidoAtual.forEach((it, index) => {
                 const row = document.createElement('div');
+                row.className = 'border-bottom py-2 d-flex justify-content-between align-items-start';
+
+                const infoDiv = document.createElement('div');
                 const qtd = it.qtd||1;
                 const valorUnit = Number(it.valor||it.preco||0);
-                row.innerHTML = `<strong>${it.nome}</strong> x${qtd} - ${money(valorUnit*qtd)}`;
+                infoDiv.innerHTML = `<strong>${it.nome}</strong> x${qtd} - ${money(valorUnit*qtd)}`;
                 if(it.adicionais && it.adicionais.length){
                     const subs = it.adicionais.map(a=>`+ ${a.nome}`).join('<br>');
-                    row.innerHTML += `<br>${subs}`;
+                    infoDiv.innerHTML += `<br>${subs}`;
                 }
-                if(it.observacao) row.innerHTML += `<br><em>Observação: ${it.observacao}</em>`;
+                if(it.observacao) infoDiv.innerHTML += `<br><em>Observação: ${it.observacao}</em>`;
+                row.appendChild(infoDiv);
+
+                // 🔥 Botão de lixeira
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-sm btn-outline-danger ms-2';
+                delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                delBtn.title = 'Remover item';
+                delBtn.addEventListener('click', () => {
+                    if(confirm('Remover este item do pedido?')){
+                        pedidoAtual.splice(index, 1);
+                        itensNovos.splice(index, 1);
+                        atualizarResumo();
+                    }
+                });
+                row.appendChild(delBtn);
+
                 pedidoDiv.appendChild(row);
             });
+
             const total = pedidoAtual.reduce((acc,it)=>acc+(Number(it.valor||it.preco||0)*(it.qtd||1)),0);
             const totalDiv = document.createElement('div');
             totalDiv.className='fw-bold mt-2';
@@ -278,13 +298,11 @@
                     const subTitle=document.createElement('div');
                     subTitle.className='fw-bold mb-2'; subTitle.textContent='Subitens / Adicionais';
                     subitensWrapper.appendChild(subTitle);
-
                     subcategorias.forEach(sub=>{
                         const subHeader=document.createElement('div');
                         subHeader.className='mt-3 mb-2 fw-semibold';
                         subHeader.textContent=sub.nome;
                         subitensWrapper.appendChild(subHeader);
-
                         sub.itens.forEach(item=>{
                             const subRow=document.createElement('div');
                             subRow.className='func-item-row d-flex align-items-center justify-content-between p-2 rounded shadow-sm mb-2';
@@ -310,54 +328,33 @@
 
                 function atualizarModalValor(){
                     const qtd = parseInt(inputQuantidade.value, 10) || 1;
-
-                    // Valor base do item principal sem considerar adicionais
                     let valorBase = selectedMain ? (selectedMain.valor !== undefined ? selectedMain.valor : getItemPriceField(selectedMain)) : 0;
-
-                    // Somar apenas adicionais selecionados
-                    const adicionais = Array.from(subitensWrapper.querySelectorAll('input[type="checkbox"]:checked')).reduce((acc, el) => {
-                        return acc + (Number(el.dataset.valor) || 0);
-                    }, 0);
-
-                    // Multiplicar quantidade só depois de somar valor base + adicionais
+                    const adicionais = Array.from(subitensWrapper.querySelectorAll('input[type="checkbox"]:checked')).reduce((acc, el) => acc + (Number(el.dataset.valor) || 0), 0);
                     const total = (valorBase + adicionais) * qtd;
-
                     modalValor.textContent = money(total);
                 }
-
-
 
                 modalInstance.show();
             }catch(e){ console.error(e); alert('Erro ao abrir categoria'); }
         }
 
         // Spinner quantidade
-        inputQuantidade.value = 1;
-
-        // Input manual
         inputQuantidade.addEventListener('input', () => {
             let val = parseInt(inputQuantidade.value, 10);
             if (isNaN(val) || val < 1) val = 1;
             inputQuantidade.value = val;
             atualizarModalValor();
         });
-
-        // Botão +
         btnIncrease.addEventListener('click', () => {
-            let val = parseInt(inputQuantidade.value, 10) || 1;
-            val += 1; // sempre soma 1, independente dos extras
-            inputQuantidade.value = val;
+            inputQuantidade.value = (parseInt(inputQuantidade.value, 10) || 1) + 1;
             atualizarModalValor();
         });
-
-        // Botão -
         btnDecrease.addEventListener('click', () => {
             let val = parseInt(inputQuantidade.value, 10) || 1;
-            if (val > 1) val -= 1; // sempre subtrai 1
+            if (val > 1) val--;
             inputQuantidade.value = val;
             atualizarModalValor();
         });
-
 
         function atualizarTituloModal(){
             const titulo=modalEl.querySelector('.modal-title');
@@ -368,13 +365,11 @@
 
         btnLancarItem.addEventListener('click',()=>{
             if(!selectedMain){ alert('Selecione um item'); return; }
-
             const selecionados=Array.from(subitensWrapper.querySelectorAll('input[type="checkbox"]:checked'))
                 .map(el=>{
                     const nome=el.closest('.func-item-row').querySelector('.fw-bold').textContent;
                     return { id:el.value, nome:nome, valor:Number(el.dataset.valor)||0 };
                 });
-
             const novoItem={
                 origem_id:selectedMain.id,
                 nome:selectedMain.nome,
@@ -383,7 +378,6 @@
                 observacao:itemObservacao.value.trim(),
                 adicionais:selecionados
             };
-
             pedidoAtual.push(novoItem);
             itensNovos.push(novoItem);
             modalInstance.hide();
@@ -391,33 +385,20 @@
             atualizarResumo();
         });
 
-
-        // Resetar variáveis sempre que o modal fechar
         modalEl.addEventListener('hidden.bs.modal', () => {
-            // Resetar quantidade para 1
             inputQuantidade.value = 1;
-
-            // Resetar o valor exibido
             modalValor.textContent = 'R$ 0,00';
-
-            // Limpar observação
             itemObservacao.value = '';
-
-            // Desmarcar todos os checkboxes de adicionais
             subitensWrapper.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-
-            // Limpar variáveis de controle
             selectedMain = null;
             pizzaHalf = null;
             firstHalf = null;
-
-            // Garantir que o campo de busca seja limpo
             const inputBusca = document.getElementById('inputBuscaSabor');
             if (inputBusca) inputBusca.value = '';
         });
-
-
     })();
 </script>
+
+
 </body>
 </html>
