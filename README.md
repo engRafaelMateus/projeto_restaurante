@@ -1,4 +1,8 @@
 Restaurant Manager
+## Histórico
+
+Projeto iniciado em 2025 e atualizado em 2026, com melhorias nas
+funcionalidades, testes e documentação.
 
 Sistema web de mesas e comandas, do pedido do garçom ao fechamento no caixa.
 
