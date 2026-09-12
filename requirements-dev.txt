@@ -1,0 +1,12 @@
+# Ferramentas usadas só em desenvolvimento e na verificação contínua.
+-r requirements.txt
+
+# Lint e formatação.
+ruff
+
+# Verificação do fluxo em navegador real (apps/atendimento/tests/test_navegador.py).
+# O pacote é leve; o Chromium (~150 MB) é baixado à parte, uma única vez, por
+# "python -m playwright install chromium".
+# O teste de navegador só roda com RODAR_TESTES_DE_NAVEGADOR=1, então a suíte
+# do dia a dia continua sem depender dele.
+playwright

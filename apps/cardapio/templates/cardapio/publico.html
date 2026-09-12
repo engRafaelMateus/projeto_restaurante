@@ -1,0 +1,61 @@
+{% extends "base_publico.html" %}
+{% load static dinheiro %}
+
+{% block titulo %}Cardápio · Restaurante Demo{% endblock %}
+{% block descricao %}Cardápio do restaurante: lanches, pizzas, bebidas e sobremesas.{% endblock %}
+
+{% block conteudo %}
+    <section class="capa">
+        <div class="container">
+            <h1>Cardápio</h1>
+            <p>
+                Preços praticados no salão. O pedido é feito com o garçom na mesa —
+                esta página é de consulta.
+            </p>
+        </div>
+    </section>
+
+    <div class="container" style="padding-top:32px;">
+        {% for secao in secoes %}
+            <section aria-labelledby="categoria-{{ secao.categoria.slug }}" style="margin-bottom:40px;">
+                <h2 id="categoria-{{ secao.categoria.slug }}">{{ secao.categoria.nome }}</h2>
+
+                <div class="grade-cardapio">
+                    {% for produto in secao.produtos %}
+                        <article class="produto">
+                            {% if produto.imagem %}
+                                <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" loading="lazy">
+                            {% else %}
+                                <img src="{% static 'img/placeholder.svg' %}" alt="" loading="lazy">
+                            {% endif %}
+                            <div class="produto__corpo">
+                                <h3>{{ produto.nome }}</h3>
+                                {% if produto.descricao %}
+                                    <p class="texto-suave">{{ produto.descricao }}</p>
+                                {% endif %}
+                                {% if produto.permite_meio_a_meio %}
+                                    <p class="texto-suave">Disponível meio a meio (cobra-se o sabor mais caro).</p>
+                                {% endif %}
+                                <div class="produto__preco">{{ produto.preco|brl }}</div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+
+                {% if secao.adicionais %}
+                    <p class="texto-suave" style="margin-top:12px;">
+                        <strong>Adicionais desta categoria:</strong>
+                        {% for adicional in secao.adicionais %}
+                            {{ adicional.nome }} ({{ adicional.preco|brl }}){% if not forloop.last %} · {% endif %}
+                        {% endfor %}
+                    </p>
+                {% endif %}
+            </section>
+        {% empty %}
+            <div class="estado-vazio" style="margin-bottom:40px;">
+                <p class="negrito">O cardápio ainda não tem produtos disponíveis.</p>
+                <p>Cadastre produtos na administração ou rode o comando de dados de demonstração.</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

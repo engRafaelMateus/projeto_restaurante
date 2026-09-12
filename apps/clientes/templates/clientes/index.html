@@ -1,0 +1,80 @@
+{% extends "base_publico.html" %}
+{% load static dinheiro %}
+
+{% block titulo %}Restaurante Demo · restaurant-manager{% endblock %}
+{% block descricao %}Projeto de portfólio: sistema de gestão de restaurante em Django.{% endblock %}
+
+{% block conteudo %}
+    <section class="capa">
+        <div class="container">
+            <h1>Restaurante Demo</h1>
+            <p>
+                Vitrine de demonstração do <strong>restaurant-manager</strong>: um sistema de
+                comanda por mesa, com tela de garçom no celular e caixa no computador.
+            </p>
+            <p style="margin-top:16px;">
+                <a class="botao" href="{% url 'cardapio:publico' %}">Ver o cardápio</a>
+                <a class="botao" href="{% url 'login' %}">Área da equipe</a>
+            </p>
+        </div>
+    </section>
+
+    <div class="container" style="padding-top:32px;">
+        <div class="aviso aviso--informativo">
+            Projeto de portfólio. Não é um sistema homologado para operação comercial,
+            não emite documento fiscal e não processa pagamentos on-line.
+        </div>
+
+        <section style="margin-bottom:32px;">
+            <h2>Como funciona</h2>
+            <div class="grade-cardapio">
+                <div class="cartao">
+                    <h3>Garçom</h3>
+                    <p class="texto-suave">
+                        Abre a mesa no celular, monta o pedido em rascunho, revisa e envia.
+                        O que já foi enviado fica separado do que ainda é rascunho.
+                    </p>
+                </div>
+                <div class="cartao">
+                    <h3>Caixa</h3>
+                    <p class="texto-suave">
+                        Vê as mesas ocupadas e os totais em tempo quase real, confere a conta,
+                        registra o pagamento manualmente e encerra a comanda.
+                    </p>
+                </div>
+                <div class="cartao">
+                    <h3>Administração</h3>
+                    <p class="texto-suave">
+                        Cadastra produtos, preços, adicionais, mesas e usuários, e consulta
+                        o histórico de comandas encerradas.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        {% if destaques %}
+            <section style="margin-bottom:48px;">
+                <div class="cartao__titulo">
+                    <h2>Alguns itens do cardápio</h2>
+                    <a href="{% url 'cardapio:publico' %}">Ver cardápio completo</a>
+                </div>
+                <div class="grade-cardapio">
+                    {% for produto in destaques %}
+                        <article class="produto">
+                            {% if produto.imagem %}
+                                <img src="{{ produto.imagem.url }}" alt="{{ produto.nome }}" loading="lazy">
+                            {% else %}
+                                <img src="{% static 'img/placeholder.svg' %}" alt="" loading="lazy">
+                            {% endif %}
+                            <div class="produto__corpo">
+                                <h3>{{ produto.nome }}</h3>
+                                <p class="texto-suave">{{ produto.categoria.nome }}</p>
+                                <div class="produto__preco">{{ produto.preco|brl }}</div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

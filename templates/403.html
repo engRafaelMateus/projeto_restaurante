@@ -1,0 +1,21 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acesso não permitido</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="tela-login">
+    <div class="cartao">
+        <h1>Acesso não permitido</h1>
+        <p>Seu perfil não tem permissão para esta tela. Se precisa dela, peça à administração para ajustar seu perfil, ou entre com outro usuário.</p>
+        <p>
+            <a class="botao" href="/">Ir para o início</a>
+            <a class="botao" href="/entrar/">Entrar</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

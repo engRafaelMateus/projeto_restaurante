@@ -1,0 +1,53 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Entrar · restaurant-manager</title>
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="tela-login">
+    <div class="cartao">
+        <h1>Entrar no sistema</h1>
+        <p class="texto-suave">Use o usuário fornecido pela administração do restaurante.</p>
+
+        {% if form.errors %}
+            <div class="aviso aviso--erro" role="alert">
+                Usuário ou senha incorretos. Confira e tente novamente.
+            </div>
+        {% endif %}
+
+        {% if next and user.is_authenticated %}
+            <div class="aviso aviso--atencao" role="alert">
+                Seu perfil não tem acesso a essa tela. Entre com outro usuário se precisar dela.
+            </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="campo">
+                <label for="{{ form.username.id_for_label }}">Usuário</label>
+                <input type="text" name="{{ form.username.html_name }}"
+                       id="{{ form.username.id_for_label }}"
+                       autocomplete="username" autocapitalize="none" required
+                       value="{{ form.username.value|default:'' }}">
+            </div>
+            <div class="campo">
+                <label for="{{ form.password.id_for_label }}">Senha</label>
+                <input type="password" name="{{ form.password.html_name }}"
+                       id="{{ form.password.id_for_label }}"
+                       autocomplete="current-password" required>
+            </div>
+            <input type="hidden" name="next" value="{{ next }}">
+            <button class="botao botao--primario botao--bloco" type="submit">Entrar</button>
+        </form>
+
+        <p class="texto-suave" style="margin-top:16px;">
+            <a href="{% url 'clientes:index' %}">Voltar ao site</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

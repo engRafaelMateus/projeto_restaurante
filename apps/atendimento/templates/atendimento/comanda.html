@@ -1,0 +1,157 @@
+{% extends "base_app.html" %}
+{% load static %}
+
+{% block titulo %}Comanda{% endblock %}
+
+{% block conteudo %}
+    <h1>Lançar pedido</h1>
+
+    <!-- Passo 1: mesa -->
+    <section class="cartao" id="secao-mesa" aria-labelledby="titulo-mesa">
+        <div class="cartao__titulo">
+            <h2 id="titulo-mesa">1. Escolha a mesa</h2>
+            <span class="indicador-atualizacao" id="indicador-mesas" role="status">
+                <span class="ponto ponto--carregando"></span> carregando mesas…
+            </span>
+        </div>
+
+        {% if mesas %}
+            <div class="grade-de-mesas" id="grade-mesas">
+                {% for mesa in mesas %}
+                    <button type="button" class="mesa" data-mesa="{{ mesa.numero }}">
+                        <span class="mesa__numero">Mesa {{ mesa.numero }}</span>
+                        <span class="etiqueta etiqueta--livre" data-papel="situacao">● Livre</span>
+                        <span class="mesa__total" data-papel="total"></span>
+                    </button>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="estado-vazio">
+                <p class="negrito">Nenhuma mesa cadastrada.</p>
+                <p>Peça à administração para cadastrar as mesas antes de abrir o salão.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <!-- Passo 2: comanda aberta -->
+    <section class="cartao" id="secao-comanda" hidden aria-labelledby="titulo-comanda">
+        <div class="cartao__titulo">
+            <h2 id="titulo-comanda">2. Comanda da <span id="rotulo-mesa">mesa</span></h2>
+            <button type="button" class="botao botao--pequeno" id="botao-trocar-mesa">Trocar de mesa</button>
+        </div>
+
+        <p class="texto-suave" id="identificacao-comanda" aria-live="polite"></p>
+
+        <div id="mensagem-comanda" role="alert"></div>
+
+        <h3>Categorias</h3>
+        <div id="categorias" class="linha-de-campos" style="gap:8px;"></div>
+
+        <div style="margin-top:24px;">
+            <h3>Já enviado ao servidor</h3>
+            <div class="bloco-itens-enviados">
+                <ul class="lista-itens" id="itens-enviados"></ul>
+                <p class="texto-suave" id="sem-itens-enviados">Nenhum item enviado nesta comanda ainda.</p>
+            </div>
+        </div>
+
+        <div style="margin-top:16px;">
+            <h3>Rascunho (ainda não enviado)</h3>
+            <div class="bloco-itens-novos">
+                <ul class="lista-itens" id="itens-rascunho"></ul>
+                <p class="texto-suave" id="sem-rascunho">
+                    Nada no rascunho. Escolha uma categoria acima para lançar itens.
+                </p>
+            </div>
+            <p class="texto-suave" style="margin-top:8px;">
+                Itens do rascunho podem ser removidos livremente. Depois de enviados, só o caixa
+                pode cancelar, com motivo registrado.
+            </p>
+        </div>
+    </section>
+{% endblock %}
+
+{% block rodape_fixo %}
+    <div class="barra-fixa" id="barra-envio" hidden>
+        <div class="barra-fixa__conteudo">
+            <div class="total-linha" style="border-top:0;padding-top:0;margin-top:0;">
+                <span>Total da comanda</span>
+                <span class="valor" id="total-geral">R$ 0,00</span>
+            </div>
+            <p class="texto-suave" id="detalhe-total" style="margin:0;"></p>
+            <button class="botao botao--primario botao--bloco" id="botao-enviar" disabled>
+                Enviar pedido
+            </button>
+        </div>
+    </div>
+
+    <!-- Diálogo de lançamento de item -->
+    <dialog id="dialogo-item" aria-labelledby="titulo-dialogo">
+        <form method="dialog">
+            <div class="dialogo__cabecalho">
+                <h2 id="titulo-dialogo">Selecionar item</h2>
+                <button class="botao botao--pequeno" value="cancelar" aria-label="Fechar">Fechar</button>
+            </div>
+        </form>
+
+        <div class="dialogo__corpo">
+            <div class="campo">
+                <label for="busca-produto">Buscar</label>
+                <input type="search" id="busca-produto" placeholder="Digite parte do nome" autocomplete="off">
+            </div>
+
+            <div id="lista-produtos" role="radiogroup" aria-label="Produtos da categoria"></div>
+
+            <div id="bloco-meio-a-meio" hidden>
+                <h3 style="margin-top:16px;">Segundo sabor (meio a meio)</h3>
+                <p class="texto-suave" id="explicacao-meio-a-meio"></p>
+                <div id="lista-segundo-sabor" role="radiogroup" aria-label="Segundo sabor"></div>
+            </div>
+
+            <div id="bloco-adicionais" hidden>
+                <h3 style="margin-top:16px;">Adicionais</h3>
+                <div id="lista-adicionais"></div>
+            </div>
+
+            <div class="linha-de-campos" style="margin-top:16px;">
+                <div class="campo">
+                    <label for="quantidade-item">Quantidade</label>
+                    <div class="contador">
+                        <button type="button" class="botao" id="botao-menos" aria-label="Diminuir quantidade">−</button>
+                        <input type="number" id="quantidade-item" value="1" min="1"
+                               max="{{ quantidade_maxima }}" inputmode="numeric">
+                        <button type="button" class="botao" id="botao-mais" aria-label="Aumentar quantidade">+</button>
+                    </div>
+                </div>
+                <div class="campo texto-direita" style="flex:1 1 140px;">
+                    <span class="texto-suave">Subtotal do item</span>
+                    <div class="negrito" id="subtotal-item" style="font-size:1.2rem;">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div class="campo">
+                <label for="observacao-item">Observação</label>
+                <textarea id="observacao-item" maxlength="140"
+                          placeholder="Ex.: sem cebola"></textarea>
+                <span class="texto-suave" id="contador-observacao">140 caracteres restantes</span>
+            </div>
+
+            <div id="erro-dialogo" role="alert"></div>
+        </div>
+
+        <div class="dialogo__rodape">
+            <button type="button" class="botao" id="botao-cancelar-item">Cancelar</button>
+            <button type="button" class="botao botao--sucesso" id="botao-adicionar-rascunho">
+                Adicionar ao rascunho
+            </button>
+        </div>
+    </dialog>
+{% endblock %}
+
+{% block scripts %}
+    <script id="dados-comanda" type="application/json">
+        {"quantidadeMaxima": {{ quantidade_maxima }}}
+    </script>
+    <script src="{% static 'js/api.js' %}"></script>
+    <script src="{% static 'js/comanda.js' %}"></script>
+{% endblock %}

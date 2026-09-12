@@ -1,0 +1,172 @@
+{% extends "base_app.html" %}
+{% load static %}
+
+{% block titulo %}Caixa{% endblock %}
+
+{% block conteudo %}
+    <div class="cartao__titulo">
+        <h1>Caixa</h1>
+        <span class="indicador-atualizacao" id="indicador" role="status">
+            <span class="ponto ponto--carregando"></span> carregando…
+        </span>
+    </div>
+
+    {% if not pode.registrar_pagamento %}
+        <div class="aviso aviso--informativo">
+            Seu perfil consulta as comandas, mas não registra pagamento nem cancela itens.
+            Essas ações são do caixa e da administração.
+        </div>
+    {% endif %}
+
+    <div id="mensagem-geral" role="alert"></div>
+
+    <section class="cartao" aria-labelledby="titulo-mesas">
+        <div class="cartao__titulo">
+            <h2 id="titulo-mesas">Mesas</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button type="button" class="botao botao--pequeno" id="botao-atualizar">Atualizar agora</button>
+            </div>
+        </div>
+
+        {% if mesas %}
+            <div class="grade-de-mesas" id="grade-mesas">
+                {% for mesa in mesas %}
+                    <button type="button" class="mesa mesa--livre" data-mesa="{{ mesa.numero }}"
+                            aria-label="Abrir detalhes da mesa {{ mesa.numero }}">
+                        <span class="mesa__numero">Mesa {{ mesa.numero }}</span>
+                        <span class="etiqueta etiqueta--livre" data-papel="situacao">● Livre</span>
+                        <span class="mesa__total" data-papel="total"></span>
+                        <span class="texto-suave" data-papel="itens"></span>
+                    </button>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="estado-vazio">
+                <p class="negrito">Nenhuma mesa cadastrada.</p>
+                <p>Cadastre as mesas na administração para começar a operar.</p>
+            </div>
+        {% endif %}
+        <p class="texto-suave" style="margin-top:12px;">
+            Um clique abre os detalhes da mesa. A lista se atualiza sozinha a cada 10 segundos.
+        </p>
+    </section>
+
+    <section class="cartao" id="painel-comanda" hidden aria-labelledby="titulo-detalhe">
+        <div class="cartao__titulo">
+            <h2 id="titulo-detalhe">Detalhes</h2>
+            <button type="button" class="botao botao--pequeno" id="botao-fechar-painel">Fechar</button>
+        </div>
+
+        <p class="texto-suave" id="identificacao-comanda"></p>
+        <div id="mensagem-comanda" role="alert"></div>
+
+        <ul class="lista-itens" id="lista-itens-comanda"></ul>
+        <div id="sem-itens" class="estado-vazio" hidden>
+            <p class="negrito">Comanda sem consumo.</p>
+            <p>Você pode cancelar esta comanda para liberar a mesa sem registrar venda.</p>
+        </div>
+
+        <div class="total-linha">
+            <span>Total a pagar</span>
+            <span class="valor" id="total-comanda">R$ 0,00</span>
+        </div>
+
+        {% if pode.registrar_pagamento %}
+            <div class="linha-de-campos" style="margin-top:16px;">
+                <button type="button" class="botao botao--sucesso" id="botao-abrir-pagamento">
+                    Registrar pagamento e encerrar
+                </button>
+                <button type="button" class="botao" id="botao-cancelar-comanda">
+                    Cancelar comanda vazia
+                </button>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}
+
+{% block rodape_fixo %}
+    <dialog id="dialogo-pagamento" aria-labelledby="titulo-pagamento">
+        <div class="dialogo__cabecalho">
+            <h2 id="titulo-pagamento">Registrar pagamento</h2>
+        </div>
+
+        <div class="dialogo__corpo">
+            <div class="aviso aviso--informativo">
+                Registro manual. Pix e cartão informados aqui <strong>não</strong> confirmam
+                transação financeira externa — o sistema não integra banco, maquininha nem gateway.
+            </div>
+
+            <p>Mesa <strong id="pagamento-mesa"></strong> · comanda <strong id="pagamento-comanda"></strong></p>
+
+            <div class="total-linha" style="border-top:0;margin-top:0;">
+                <span>Total da conta</span>
+                <span class="valor" id="pagamento-total">R$ 0,00</span>
+            </div>
+
+            <div class="campo" style="margin-top:16px;">
+                <label for="meio-pagamento">Meio de pagamento</label>
+                <select id="meio-pagamento">
+                    {% for valor, rotulo in meios_de_pagamento %}
+                        <option value="{{ valor }}">{{ rotulo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="bloco-dinheiro" hidden>
+                <div class="campo">
+                    <label for="valor-recebido">Valor recebido do cliente</label>
+                    <input type="number" id="valor-recebido" step="0.01" min="0" inputmode="decimal">
+                </div>
+                <div class="total-linha" style="border-top:1px solid var(--cor-borda);">
+                    <span>Troco</span>
+                    <span class="valor" id="troco-previsto">R$ 0,00</span>
+                </div>
+            </div>
+
+            <div class="campo">
+                <label for="observacao-pagamento">Observação (opcional)</label>
+                <input type="text" id="observacao-pagamento" maxlength="200">
+            </div>
+
+            <div id="erro-pagamento" role="alert"></div>
+        </div>
+
+        <div class="dialogo__rodape">
+            <button type="button" class="botao" id="botao-fechar-pagamento">Cancelar</button>
+            <button type="button" class="botao botao--sucesso" id="botao-confirmar-pagamento">
+                Confirmar pagamento
+            </button>
+        </div>
+    </dialog>
+
+    <dialog id="dialogo-motivo" aria-labelledby="titulo-motivo">
+        <div class="dialogo__cabecalho">
+            <h2 id="titulo-motivo">Informe o motivo</h2>
+        </div>
+        <div class="dialogo__corpo">
+            <p class="texto-suave" id="descricao-motivo"></p>
+            <div class="campo">
+                <label for="texto-motivo">Motivo</label>
+                <input type="text" id="texto-motivo" maxlength="200"
+                       placeholder="Ex.: cliente desistiu do item">
+            </div>
+            <p class="texto-suave">
+                O motivo, o responsável e o horário ficam registrados no histórico.
+            </p>
+            <div id="erro-motivo" role="alert"></div>
+        </div>
+        <div class="dialogo__rodape">
+            <button type="button" class="botao" id="botao-fechar-motivo">Voltar</button>
+            <button type="button" class="botao botao--perigo" id="botao-confirmar-motivo">Confirmar</button>
+        </div>
+    </dialog>
+{% endblock %}
+
+{% block scripts %}
+    <script id="dados-caixa" type="application/json">
+        {"podeRegistrarPagamento": {{ pode.registrar_pagamento|yesno:"true,false" }},
+         "podeCancelarItem": {{ pode.cancelar_item|yesno:"true,false" }}}
+    </script>
+    <script src="{% static 'js/api.js' %}"></script>
+    <script src="{% static 'js/caixa.js' %}"></script>
+{% endblock %}

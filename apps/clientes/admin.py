@@ -1,3 +1,1 @@
-from django.contrib import admin
-
-# Register your models here.
+# Nada a registrar: o site público não tem modelos próprios.

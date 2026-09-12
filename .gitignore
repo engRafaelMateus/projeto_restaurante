@@ -1,6 +1,28 @@
-*.pyc
+# Python e ambientes locais
+*.py[cod]
 __pycache__/
-db.sqlite3
-.env
 .venv/
+venv/
+
+# Bancos locais, uploads e arquivos gerados
+*.sqlite3
+*.sqlite3-*
 media/
+staticfiles/
+*.log
+saida-testes.txt
+
+# Configurações locais e segredos
+.env
+.env.*
+!.env.example
+
+# Ferramentas de desenvolvimento
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.idea/
+.vscode/
+.DS_Store
