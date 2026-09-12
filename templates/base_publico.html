@@ -1,0 +1,43 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}Restaurante{% endblock %}</title>
+    <meta name="description" content="{% block descricao %}Cardápio do restaurante.{% endblock %}">
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<a class="visualmente-oculto" href="#conteudo">Pular para o conteúdo</a>
+
+<header class="barra-superior">
+    <div class="barra-superior__conteudo">
+        <a class="barra-superior__marca" href="{% url 'clientes:index' %}">Restaurante <span>Demo</span></a>
+        <nav aria-label="Navegação do site">
+            <a href="{% url 'clientes:index' %}" {% if tela_atual == 'index' %}aria-current="page"{% endif %}>Início</a>
+            <a href="{% url 'cardapio:publico' %}" {% if tela_atual == 'cardapio' %}aria-current="page"{% endif %}>Cardápio</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'apos_login' %}">Ir para o sistema</a>
+            {% else %}
+                <a href="{% url 'login' %}">Área da equipe</a>
+            {% endif %}
+        </nav>
+    </div>
+</header>
+
+<main id="conteudo">
+    {% block conteudo %}{% endblock %}
+</main>
+
+<footer class="rodape">
+    <div class="container">
+        <p>Projeto de portfólio de Rafael Lopes Mateus — sistema de gestão de restaurante.</p>
+        <p class="texto-suave" style="color:#9aa0a8;">
+            Demonstração técnica. Não é um sistema fiscal nem plataforma de pagamentos.
+            Fotos do template original do projeto, usadas apenas para ilustrar o cardápio de demonstração.
+        </p>
+    </div>
+</footer>
+</body>
+</html>

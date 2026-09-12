@@ -1,19 +1,15 @@
 from django.views.generic import TemplateView
-from apps.pedidos.models import Pizza, Extra
+
+from apps.cardapio.models import Produto
+
 
 class IndexView(TemplateView):
-    template_name =  'index.html'
+    """Página inicial pública do restaurante."""
+
+    template_name = 'clientes/index.html'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['pizzas'] = Pizza.objects.all()
-        context['extras'] = Extra.objects.all()
-        return context
-
-class Cardapio(TemplateView):
-    template_name =  'cardapio.html'
-
-
-
-
-
+        contexto = super().get_context_data(**kwargs)
+        contexto['tela_atual'] = 'index'
+        contexto['destaques'] = Produto.objects.para_cardapio()[:6]
+        return contexto

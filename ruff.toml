@@ -1,0 +1,15 @@
+# Configuração de lint e formatação.
+line-length = 100
+target-version = "py311"
+
+exclude = ["*/migrations/*", ".venv"]
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "DJ"]
+ignore = [
+    "E501",   # comprimento de linha fica a cargo do formatador
+    "DJ001",  # null=True em CharField é usado de forma consciente onde aparece
+]
+
+[format]
+quote-style = "single"

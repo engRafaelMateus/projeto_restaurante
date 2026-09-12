@@ -1,0 +1,55 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}Atendimento{% endblock %} · restaurant-manager</title>
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<a class="visualmente-oculto" href="#conteudo">Pular para o conteúdo</a>
+
+<header class="barra-superior">
+    <div class="barra-superior__conteudo">
+        <a class="barra-superior__marca" href="{% url 'apos_login' %}">restaurant<span>-manager</span></a>
+
+        <nav aria-label="Telas do sistema">
+            {% if pode.lancar_itens %}
+                <a href="{% url 'atendimento:comanda' %}"
+                   {% if tela_atual == 'comanda' %}aria-current="page"{% endif %}>Comanda</a>
+            {% endif %}
+            <a href="{% url 'atendimento:caixa' %}"
+               {% if tela_atual == 'caixa' %}aria-current="page"{% endif %}>Caixa</a>
+            {% if pode.ver_historico %}
+                <a href="{% url 'atendimento:historico' %}"
+                   {% if tela_atual == 'historico' %}aria-current="page"{% endif %}>Histórico</a>
+            {% endif %}
+            {% if user.is_staff %}
+                <a href="{% url 'admin:index' %}">Administração</a>
+            {% endif %}
+        </nav>
+
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span class="identificacao">
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                {% if perfil_atual %}· {{ perfil_atual }}{% endif %}
+            </span>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="botao botao--pequeno" type="submit">Sair</button>
+            </form>
+        </div>
+    </div>
+</header>
+
+<main id="conteudo">
+    <div class="container">
+        {% block conteudo %}{% endblock %}
+    </div>
+</main>
+
+{% block rodape_fixo %}{% endblock %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

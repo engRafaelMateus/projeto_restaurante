@@ -1,0 +1,161 @@
+{% extends "base_app.html" %}
+{% load dinheiro %}
+
+{% block titulo %}Histórico{% endblock %}
+
+{% block conteudo %}
+    <h1>Histórico de comandas encerradas</h1>
+
+    <section class="cartao" aria-labelledby="titulo-filtros">
+        <h2 id="titulo-filtros">Filtros</h2>
+        <form method="get" class="linha-de-campos">
+            <div class="campo">
+                <label for="de">De (data de encerramento)</label>
+                <input type="date" id="de" name="de" value="{{ filtros.de }}" max="{{ hoje }}">
+            </div>
+            <div class="campo">
+                <label for="ate">Até</label>
+                <input type="date" id="ate" name="ate" value="{{ filtros.ate }}" max="{{ hoje }}">
+            </div>
+            <div class="campo">
+                <label for="mesa">Mesa</label>
+                <input type="number" id="mesa" name="mesa" min="1" value="{{ filtros.mesa }}"
+                       placeholder="todas">
+            </div>
+            <div class="campo">
+                <label for="situacao">Situação</label>
+                <select id="situacao" name="situacao">
+                    <option value="">Todas</option>
+                    {% for valor, rotulo in situacoes %}
+                        <option value="{{ valor }}" {% if filtros.situacao == valor %}selected{% endif %}>
+                            {{ rotulo }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="campo">
+                <button type="submit" class="botao botao--primario">Filtrar</button>
+            </div>
+            <div class="campo">
+                <a class="botao" href="{% url 'atendimento:historico' %}">Limpar</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="cartao">
+        <div class="cartao__titulo">
+            <h2>Resultado</h2>
+            <div class="texto-direita">
+                <div class="texto-suave">Total recebido no filtro</div>
+                <div class="negrito" style="font-size:1.25rem;">{{ total_recebido|brl }}</div>
+                <div class="texto-suave">{{ quantidade_paga }} comanda(s) paga(s)</div>
+            </div>
+        </div>
+
+        <p class="texto-suave">
+            O total recebido vem do <strong>registro de pagamento</strong>, considerando a data de
+            encerramento da comanda. Comandas canceladas aparecem na lista e não contam como venda.
+        </p>
+
+        {% if comandas %}
+            <div class="tabela-rolavel">
+                <table class="tabela">
+                    <caption class="visualmente-oculto">Comandas encerradas</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Comanda</th>
+                        <th scope="col">Mesa</th>
+                        <th scope="col">Aberta</th>
+                        <th scope="col">Encerrada</th>
+                        <th scope="col">Situação</th>
+                        <th scope="col">Pagamento</th>
+                        <th scope="col" style="text-align:right;">Valor</th>
+                        <th scope="col">Itens</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for comanda in comandas %}
+                        <tr>
+                            <td>#{{ comanda.id }}</td>
+                            <td>{{ comanda.mesa.numero }}</td>
+                            <td>
+                                {{ comanda.aberta_em|date:"d/m/Y H:i" }}<br>
+                                <span class="texto-suave">{{ comanda.aberta_por.username|default:"—" }}</span>
+                            </td>
+                            <td>
+                                {{ comanda.encerrada_em|date:"d/m/Y H:i" }}<br>
+                                <span class="texto-suave">{{ comanda.encerrada_por.username|default:"—" }}</span>
+                            </td>
+                            <td>
+                                {% if comanda.status == 'paga' %}
+                                    <span class="etiqueta etiqueta--paga">✓ Paga</span>
+                                {% else %}
+                                    <span class="etiqueta etiqueta--cancelada">✕ Cancelada</span>
+                                    {% if comanda.motivo_cancelamento %}
+                                        <div class="texto-suave">{{ comanda.motivo_cancelamento }}</div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if comanda.pagamento %}
+                                    {{ comanda.pagamento.get_meio_display }}<br>
+                                    <span class="texto-suave">
+                                        por {{ comanda.pagamento.registrado_por.username }}
+                                        {% if comanda.pagamento.troco is not None %}
+                                            · troco {{ comanda.pagamento.troco|brl }}
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="texto-suave">sem pagamento</span>
+                                {% endif %}
+                            </td>
+                            <td class="numero">
+                                {% if comanda.pagamento %}{{ comanda.pagamento.valor|brl }}{% else %}—{% endif %}
+                            </td>
+                            <td>
+                                <details>
+                                    <summary>{{ comanda.itens.all|length }} item(ns)</summary>
+                                    <ul class="lista-itens">
+                                        {% for item in comanda.itens.all %}
+                                            <li class="{% if item.cancelado %}item-cancelado{% endif %}">
+                                                <div>
+                                                    <div class="descricao">{{ item.quantidade }}x {{ item.descricao }}</div>
+                                                    {% if item.observacao %}
+                                                        <div class="texto-suave">Obs.: {{ item.observacao }}</div>
+                                                    {% endif %}
+                                                    {% if item.cancelado %}
+                                                        <div class="texto-suave">
+                                                            Cancelado por {{ item.cancelado_por.username }} —
+                                                            {{ item.motivo_cancelamento }}
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="texto-suave">
+                                                        unitário praticado {{ item.preco_unitario|brl }}
+                                                        {% if item.preco_adicionais %}
+                                                            + adicionais {{ item.preco_adicionais|brl }}
+                                                        {% endif %}
+                                                        · lançado por {{ item.criado_por.username }}
+                                                    </div>
+                                                </div>
+                                                <span class="valor">{{ item.subtotal|brl }}</span>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </details>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="texto-suave" style="margin-top:12px;">
+                Exibindo no máximo 200 comandas por consulta. Refine o período para ver períodos maiores.
+            </p>
+        {% else %}
+            <div class="estado-vazio">
+                <p class="negrito">Nenhuma comanda encerrada com esses filtros.</p>
+                <p>Ajuste o período ou limpe os filtros.</p>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

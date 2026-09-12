@@ -1,0 +1,73 @@
+name: verificacao
+
+# Instalação limpa, checagens do Django, consistência de migrações,
+# arquivos estáticos, testes e lint.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: chave-apenas-para-a-verificacao-automatizada
+      DJANGO_DEBUG: 'False'
+      DJANGO_ALLOWED_HOSTS: 127.0.0.1,localhost
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Checagens do Django
+        run: python manage.py check
+
+      - name: Checagens de publicação
+        run: python manage.py check --deploy --fail-level ERROR
+
+      - name: Migrações estão consistentes com os modelos
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Migrações aplicam do zero
+        run: python manage.py migrate --no-input
+
+      - name: Carga de demonstração é idempotente
+        run: |
+          python manage.py seed_demo --sem-usuarios
+          python manage.py seed_demo --sem-usuarios
+
+      # collectstatic também é verificação: falha se algum {% static %}
+      # apontar para um arquivo que não existe.
+      - name: Arquivos estáticos
+        run: python manage.py collectstatic --no-input
+
+      - name: Testes
+        shell: bash
+        run: |
+          set -o pipefail
+          python manage.py test --verbosity 2 2>&1 | tee saida-testes.txt
+
+      # Uma suíte que descobre zero testes termina com código 0 e parece
+      # aprovada. Se a descoberta quebrar, isso precisa falhar de verdade.
+      - name: A suíte não pode estar vazia
+        shell: bash
+        run: |
+          if grep -q "Ran 0 tests" saida-testes.txt; then
+            echo "A suíte rodou 0 testes — a descoberta está quebrada."
+            exit 1
+          fi
+
+      - name: Lint
+        run: ruff check .
